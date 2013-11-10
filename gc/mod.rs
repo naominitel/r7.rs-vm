@@ -2,8 +2,8 @@ pub use self::collect::GC;
 pub use self::value::Value;
 
 mod collect;
-mod value;
-mod visit;
+pub mod value;
+pub mod visit;
 
 // wrapper type for GC-managed Envs
 pub type Env = *mut collect::GCEnv;
@@ -24,6 +24,14 @@ impl Pair {
 
     pub fn cdr(self) -> Value {
         unsafe { (**self).cdr }
+    }
+
+    pub fn setcar(self, car: &Value) {
+        unsafe { (**self).car = *car; }
+    }
+
+    pub fn setcdr(self, cdr: &Value) {
+        unsafe { (**self).cdr = *cdr; }
     }
 }
 

@@ -1,3 +1,7 @@
+// A simple linked-list the GC uses to keep track of allocated objects.
+// extra::list wouldn't work since it uses @-ptrs and extra::Dlist doesn't
+// allow random index removal
+
 pub enum ListNode<T> {
     Empty,
     Node(T, ~ListNode<T>)

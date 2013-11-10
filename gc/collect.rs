@@ -61,6 +61,12 @@ impl GCollect for GCPair {
     }
 }
 
+impl Drop for GCPair {
+    fn drop(&mut self) {
+        println!("Dropping pair whose car is {:?}", self.car);
+    }
+}
+
 // a garbage-collected Scheme environment
 pub struct GCEnv {
     values: ~[Value],
@@ -100,7 +106,9 @@ struct GC {
 
 impl GC {
     pub fn new() -> ~GC {
-        ~GC { heap: list::List::new(), white: list::List::new(),
+        ~GC {
+            heap: list::List::new(),
+            white: list::List::new(),
             current_mark: false
         }
     }
@@ -119,21 +127,30 @@ impl GC {
                 let mut nnext = ~list::Empty;
                 swap(next, &mut nnext);
 
-                match nnext {
+                if match nnext {
                     ~list::Node(ref mut t, ref mut tail) => {
                         if !t.is_marked(m) {
-                            swap(next, tail)
+                            swap(next, tail);
+                            false
                         }
+
+                        else { true }
                     }
 
-                    _ => ()
+                    _ =>  true
+                } {
+                    // nothing to remove, put everything
+                    // back in place and continue
+                    swap(next, &mut nnext);
+                    return GC::check_node(m, &mut **next);
                 }
-
-                GC::check_node(m, &mut **next);
             }
 
-            _ => ()
+            _ => return
         }
+
+        // we didn't finished checking this node
+        GC::check_node(m, node)
     }
 
     pub fn sweep(&mut self, roots: &mut [&mut Visitor]) {

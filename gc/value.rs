@@ -12,8 +12,27 @@ use gc;
 pub enum Value {
     Pair(gc::Pair),
     Closure(uint, gc::Env),
+    Num(int),
     Null,
     Unit
 }
 
+pub fn setcar(val: &mut Value, car: &Value) {
+    match val {
+        &Pair(p) => {
+            p.setcar(car);
+        }
 
+        _ => fail!("Attempting to setcar! on a non-pair value")
+    }
+}
+
+pub fn setcdr(val: &mut Value, cdr: &Value) {
+    match val {
+        &Pair(p) => {
+            p.setcdr(cdr);
+        }
+
+        _ => fail!("Attempting to setcar! on a non-pair value")
+    }
+}
