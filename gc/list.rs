@@ -1,4 +1,4 @@
-enum ListNode<T> {
+pub enum ListNode<T> {
     Empty,
     Node(T, ~ListNode<T>)
 }
@@ -14,6 +14,10 @@ impl<T> ListNode<T> {
 }
 
 impl<T> List<T> {
+    pub fn new() -> ~List<T> {
+        ~List { head: ~Empty }
+    }
+
     pub fn insert(&mut self, t: T) {
         use std::util::swap;
 

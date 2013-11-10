@@ -3,7 +3,6 @@ use gc::Value;
 use gc::value::Pair;
 use gc::value::Unit;
 use gc::visit::Visitor;
-use std::libc;
 mod list;
 
 // Basic trait for garbage collected values
@@ -93,24 +92,59 @@ impl GCollect for GCEnv {
 // is a couple of an owned box containing the allocated object, and a raw
 // ptr to the same object
 
-type GCCell = ~(~GCollect, *libc::c_void);
-
 struct GC {
-    heap:  ~list::List<GCCell>,
-    white: ~list::List<GCCell>,
+    heap:  ~list::List<~GCollect>,
+    white: ~list::List<~GCollect>,
     current_mark: bool
 }
 
 impl GC {
+    pub fn new() -> ~GC {
+        ~GC { heap: list::List::new(), white: list::List::new(),
+            current_mark: false
+        }
+    }
+
     fn mark(&mut self, roots: &mut [&mut Visitor]) {
         for v in roots.mut_iter() {
             v.visit(true);
         }
     }
 
-    fn alloc_pair(&mut self) -> Value {
+    fn check_node(m: bool, node: &mut list::ListNode<~GCollect>) {
+        use std::util::swap;
+
+        match node {
+            &list::Node(_, ref mut next) => {
+                let mut nnext = ~list::Empty;
+                swap(next, &mut nnext);
+
+                match nnext {
+                    ~list::Node(ref mut t, ref mut tail) => {
+                        if !t.is_marked(m) {
+                            swap(next, tail)
+                        }
+                    }
+
+                    _ => ()
+                }
+
+                GC::check_node(m, &mut **next);
+            }
+
+            _ => ()
+        }
+    }
+
+    pub fn sweep(&mut self, roots: &mut [&mut Visitor]) {
+        self.current_mark = !self.current_mark;
+        self.mark(roots);
+        GC::check_node(self.current_mark, self.heap.head);
+    }
+
+    pub fn alloc_pair(&mut self) -> Value {
         let mut p = ~GCPair {
-            mark: !self.current_mark,
+            mark: self.current_mark,
             car: Unit,
             cdr: Unit
         };
@@ -120,14 +154,14 @@ impl GC {
             r as *mut GCPair
         };
         
-        self.heap.insert(~(p as ~GCollect, ptr as *libc::c_void));
+        self.heap.insert(p as ~GCollect);
         Pair(::gc::Pair(ptr))
     }
 
-    fn alloc_env(&mut self, next: Option<Env>) -> Env {
+    pub fn alloc_env(&mut self, next: Option<Env>) -> Env {
         let mut env = ~GCEnv { 
             values: ~[], 
-            mark: !self.current_mark,
+            mark: self.current_mark,
             next: next
         };
 
@@ -136,7 +170,7 @@ impl GC {
             r as *mut GCEnv 
         };
 
-        self.heap.insert(~(env as ~GCollect, ptr as *libc::c_void));
+        self.heap.insert(env as ~GCollect);
         ptr
     }
 }

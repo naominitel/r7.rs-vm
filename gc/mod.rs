@@ -1,3 +1,4 @@
+pub use self::collect::GC;
 pub use self::value::Value;
 
 mod collect;
