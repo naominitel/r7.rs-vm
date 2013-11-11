@@ -3,6 +3,7 @@ use gc::Value;
 use gc::value::Pair;
 use gc::value::Unit;
 use gc::visit::Visitor;
+use std::vec;
 mod list;
 
 // Basic trait for garbage collected values
@@ -93,6 +94,22 @@ impl GCollect for GCEnv {
     }
 }
 
+impl GCEnv {
+    pub fn store(&mut self, value: &Value, addr: u64) {
+        if addr < self.values.len() as u64 {
+            self.values[addr] = *value;
+        }
+
+        match self.next {
+            Some(e) => unsafe {
+                (*e).store(value, addr - self.values.len() as u64)
+            },
+
+            None => fail!("Value not in environment")
+        }
+    }
+}
+
 // The GC itself
 // Keeps all the allocated values in a linked list of cells, where a cell
 // is a couple of an owned box containing the allocated object, and a raw
@@ -175,9 +192,9 @@ impl GC {
         Pair(::gc::Pair(ptr))
     }
 
-    pub fn alloc_env(&mut self, next: Option<Env>) -> Env {
+    pub fn alloc_env(&mut self, size: u64, next: Option<Env>) -> Env {
         let mut env = ~GCEnv { 
-            values: ~[], 
+            values: vec::with_capacity(size as uint),
             mark: self.current_mark,
             next: next
         };

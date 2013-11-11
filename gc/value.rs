@@ -11,8 +11,8 @@ use gc;
 #[deriving(Clone)]
 pub enum Value {
     Pair(gc::Pair),
-    Closure(uint, gc::Env),
-    Num(int),
+    Closure(u64, gc::Env),
+    Num(i64),
     Null,
     Unit
 }

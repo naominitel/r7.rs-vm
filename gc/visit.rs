@@ -51,7 +51,7 @@ impl Visitor for Value {
 
 impl Visitor for Stack {
     fn visit(&mut self, m: bool) {
-        for v in self.values.mut_iter() {
+        for v in self.mut_iter() {
             v.visit(m);
         }
     }
