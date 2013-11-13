@@ -77,6 +77,13 @@ impl VM {
         self.load_module(l);
     }
 
+    pub fn run_file(&mut self, prog: ~str) {
+        let p = Path::new(prog);
+        let name = ~[~"main"];
+        let l = Library::load_file(self.gc, &p, ~LibName(name));
+        self.load_module(l);
+    }
+
     fn load_module(&mut self, lib: ~Library) {
         let mut env = None;
         for i in lib.imports.iter() {
