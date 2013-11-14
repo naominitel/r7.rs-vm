@@ -38,16 +38,11 @@ impl VM {
 
     fn read<T: Read>(&mut self) -> T {
         let base = base(self.frame.pc);
-        let off = off(self.frame.pc);
         let lib = &self.modules[base];
 
-        println("Read success");
-
         do Read::read { 
-            println!("Reading bytecode at offset {:u}", off);
-            let b = lib.prog[off];
+            let b = lib.prog[off(self.frame.pc)];
             self.frame.pc += 1;
-            println("ok");
             b
         }
     }
@@ -132,7 +127,6 @@ impl VM {
     }
 
     fn exec_instr(&mut self) {
-        println!("Decoding next instruction");
         let opcode = self.next_op();
         println!("Executing next instruction: {:?}", opcode);
 
@@ -212,6 +206,14 @@ impl VM {
 
                     _ => fail!("Attempting to call a non-function value")
                 }
+            }
+
+            bytecode::Jump => {
+                println!("Current pc is {:x}", self.frame.pc);
+                let dst: u32 = self.read();
+                println!("Jumping at {:x}", dst);
+                self.frame.pc = self.frame.pc & 0x00000000;
+                self.frame.pc = self.frame.pc | (dst as u64);
             }
 
             _ => {
