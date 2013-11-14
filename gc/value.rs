@@ -1,9 +1,11 @@
 use gc;
+use vm;
 
 // Type for representing Scheme values manipulated by the VM
 // a Value can be either
 //   * a pair of two values (managed by the GC)
 //   * a closure with its program and environment managed by the GC
+//   * a primitive (in-VM implemented function)
 //   * integer data types managed by copy
 //   * unit, the void value
 //   * null, a singleton value for '()
@@ -12,6 +14,7 @@ use gc;
 pub enum Value {
     Pair(gc::Pair),
     Closure(u64, gc::Env),
+    Primitive(vm::Prim),
     Num(i64),
     Null,
     Unit

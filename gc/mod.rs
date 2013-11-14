@@ -1,4 +1,5 @@
 pub use self::collect::GC;
+pub use self::collect::GCEnv;
 pub use self::value::Value;
 
 mod collect;

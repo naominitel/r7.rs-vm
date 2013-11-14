@@ -108,6 +108,39 @@ impl GCEnv {
             None => fail!("Value not in environment")
         }
     }
+
+    pub fn fetch(&mut self, addr: u64) -> Value {
+        if addr < self.values.len() as u64 {
+            self.values[addr]
+        }
+
+        else { match self.next {
+            Some(e) => unsafe {
+                (*e).fetch(addr - self.values.len() as u64)
+            },
+
+            None => fail!("Value not in environment")
+        }}
+    }
+
+    pub fn dump(&self) {
+        print("[ ");
+
+        for i in self.values.iter() {
+            print!("{:?} ", i);
+        }
+
+        print("]");
+
+        match self.next {
+            Some(e) => {
+                print(" => ");
+                unsafe { (*e).dump() };
+            }
+
+            None => println!(" End.")
+        }
+    }
 }
 
 // The GC itself

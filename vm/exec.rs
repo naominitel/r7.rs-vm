@@ -12,6 +12,7 @@ use vm::Frame;
 use vm::Library;
 use vm::library::LibName;
 use vm::Stack;
+use vm::primitive::primEnv;
 
 struct VM {
     frame: ~Frame,
@@ -27,8 +28,9 @@ impl VM {
         let stack = ~[];
 
         // FIXME: add primitive env here
-        let frame = Frame::new((0 as Env), 0, 0);
-        let gc = GC::new();
+        let mut gc = GC::new();
+        let env = primEnv(gc);
+        let frame = Frame::new(env, 0, 0);
         let loaded_mods = HashMap::new();
         let mods = ~[];
 
@@ -67,6 +69,20 @@ impl VM {
         ::std::util::swap(&mut self.frame, &mut frame);
     }
 
+    fn pop_frame(&mut self) {
+        let mut nframe = Frame::new((0 as Env), 0, 0);
+
+        match self.frame.caller {
+            Some(ref mut f) => {
+                ::std::util::swap(f, &mut nframe);
+            }
+
+            None => fail!()
+        }
+
+        ::std::util::swap(&mut self.frame, &mut nframe);
+    }
+
     pub fn run(&mut self, lib: ~LibName) {
         let l = Library::load(self.gc, &*lib, Library::library_path(None));
         self.load_module(l);
@@ -80,7 +96,7 @@ impl VM {
     }
 
     fn load_module(&mut self, lib: ~Library) {
-        let mut env = None;
+        let mut env = Some(primEnv(self.gc));
         for i in lib.imports.iter() {
             let m = self.loaded_mods.find_copy(&**i);
 
@@ -150,12 +166,12 @@ impl VM {
 
             bytecode::Fetch => {
                 let addr: u64 = self.read();
+                let value = self.frame.fetch(addr);
+                self.stack.push(value);
             }
 
             bytecode::Push => {
-                println!("Decoding push type");
                 let ty = self.next_ty();
-                println!("Push of type: {:?}", ty);
 
                 let val = match ty {
                     bytecode::Unit => {
@@ -198,10 +214,30 @@ impl VM {
 
             bytecode::Call => {
                 let fval = self.stack.pop();
+                let argc: u8 = self.read();
 
                 match fval {
                     value::Closure(pc, env) => {
+                        let mut env = self.gc.alloc_env(argc as u64, Some(env));
+
+                        for i in range(0, argc) {
+                            let arg = self.stack.pop();
+                            unsafe { (*env).values.push(arg); }
+                        }
+
                         self.push_frame(pc, env);
+                    }
+
+                    value::Primitive(prim) => {
+                        let mut args = ~[];
+
+                        for i in range(0, argc) {
+                            let arg = self.stack.pop();
+                            args.push(arg);
+                        }
+
+                        let ret = prim(args);
+                        self.stack.push(ret);
                     }
 
                     _ => fail!("Attempting to call a non-function value")
@@ -209,19 +245,27 @@ impl VM {
             }
 
             bytecode::Jump => {
-                println!("Current pc is {:x}", self.frame.pc);
                 let dst: u32 = self.read();
-                println!("Jumping at {:x}", dst);
                 self.frame.pc = self.frame.pc & 0x00000000;
                 self.frame.pc = self.frame.pc | (dst as u64);
+            }
+
+            bytecode::Return => {
+                let ret = self.stack.pop();
+
+                // unwind stack used by the function
+                while self.stack.len() > self.frame.sp {
+                    self.stack.pop();
+                }
+
+                self.stack.push(ret);
+                self.pop_frame();
             }
 
             _ => {
                 fail!("Unkwown bytecode instruction {:u}", opcode as u8);
             }
         }
-
-        println!("Finished executing instruction");
     }
 
     fn exec_module(&mut self) {

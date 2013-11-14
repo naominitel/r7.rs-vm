@@ -22,4 +22,8 @@ impl Frame {
     pub fn store(&mut self, value: &Value, addr: u64) {
         unsafe { (*self.env).store(value, addr) }
     }
+
+    pub fn fetch(&mut self, addr: u64) -> Value {
+        unsafe { (*self.env).fetch(addr) }
+    }
 }
