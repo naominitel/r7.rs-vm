@@ -236,7 +236,7 @@ impl VM {
                             args.push(arg);
                         }
 
-                        let ret = prim(args);
+                        let ret = prim(args, self);
                         self.stack.push(ret);
                     }
 

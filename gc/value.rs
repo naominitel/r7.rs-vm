@@ -10,14 +10,29 @@ use vm;
 //   * unit, the void value
 //   * null, a singleton value for '()
 
-#[deriving(Clone)]
+// FIXME: bug #10501 #[deriving(Clone)]
 pub enum Value {
-    Pair(gc::Pair),
+    Bool(bool),
     Closure(u64, gc::Env),
-    Primitive(vm::Prim),
-    Num(i64),
     Null,
+    Num(i64),
+    Pair(gc::Pair),
+    Primitive(vm::Prim),
     Unit
+}
+
+impl Clone for Value {
+    fn clone(&self) -> Value {
+        match self {
+            &Bool(b) => Bool(b),
+            &Closure(pc, e) => Closure(pc, e),
+            &Null => Null,
+            &Num(n) => Num(n),
+            &Pair(p) => Pair(p),
+            &Primitive(p) => Primitive(p),
+            &Unit => Unit
+        }
+    }
 }
 
 pub fn setcar(val: &mut Value, car: &Value) {
