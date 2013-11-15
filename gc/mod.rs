@@ -7,7 +7,7 @@ pub mod value;
 pub mod visit;
 
 // wrapper type for GC-managed Envs
-pub type Env = *mut collect::GCEnv;
+pub type Env = *mut GCEnv;
 
 // wrapper type for GC-managed Pairs to avoid unsafe blocks everywhere
 pub struct Pair(*mut collect::GCPair);

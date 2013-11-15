@@ -15,7 +15,7 @@ impl Frame {
     }
 
     pub fn alloc(&mut self, gc: &mut GC, size: u64) {
-        let mut nenv = gc.alloc_env(size, Some(self.env));
+        let nenv = gc.alloc_env(size, Some(self.env));
         self.env = nenv;
     }
 

@@ -1,6 +1,5 @@
 use gc;
 use gc::Env;
-use gc::GCEnv;
 use gc::Value;
 use gc::value::Num;
 use gc::value::Primitive;

@@ -1,8 +1,5 @@
 use gc::Env;
-use std::fmt;
-use std::rt::io;
-use std::rt::io::File;
-use std::str;
+use std::io;
 use std::to_bytes::Cb;
 use std::vec::VecIterator;
 
@@ -68,7 +65,7 @@ impl Library {
 
     pub fn load_file(gc: &mut ::gc::GC, path: &Path, name: ~LibName) -> ~Library {
         /* found library */
-        let mut f = match File::open(path) {
+        let mut f = match io::File::open(path) {
             Some(f) => f,
             None => fail!("Impossible to open library file")
         };
@@ -76,7 +73,9 @@ impl Library {
         let mut magic = [0, .. 3];
         f.read(magic.mut_slice_from(0));
 
-        let version = f.read_byte();
+        if f.read_u8() != 0x01 {
+            fail!("Unsupported file format version.");
+        }
 
         // reserved
         f.seek(28, io::SeekCur);
@@ -91,17 +90,17 @@ impl Library {
 
         println!("Allocating a vec of size {:u}", imports_count);
         let mut imports = ::std::vec::with_capacity(imports_count as uint);
-        for i in range(0, imports_count) {
+        for _ in range(0, imports_count) {
             // read libname
             let length = f.read_be_u64();
             println!("Allocating a libname of size {:u}", length);
             let mut lname = ::std::vec::with_capacity(length as uint);
 
-            for i in range(0, length) {
+            for _ in range(0, length) {
                 let size = f.read_be_u64();
                 let mut part = ~"";
 
-                for i in range(0, size) {
+                for _ in range(0, size) {
                     let ch = f.read_u8();
                     part.push_char(ch as char);
                 }
@@ -122,7 +121,7 @@ impl Library {
         let text_size = f.read_be_u64();
         let mut text = ::std::vec::with_capacity(text_size as uint);
 
-        for i in range(0, text_size) {
+        for _ in range(0, text_size) {
             let b = f.read_u8();
             text.push(b);
         }

@@ -1,8 +1,4 @@
 pub use self::read::Read;
-use std::fmt;
-use std::num::Bitwise;
-use std::num::Zero;
-
 mod read;
 
 #[repr(u8)]

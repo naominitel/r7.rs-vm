@@ -110,7 +110,7 @@ impl VM {
                 &self.modules[m.unwrap()]
             };
 
-            let mut nenv = self.gc.alloc_env(l.exports, env);
+            let nenv = self.gc.alloc_env(l.exports, env);
             let mut i = 0;
 
             unsafe {            
@@ -218,9 +218,9 @@ impl VM {
 
                 match fval {
                     value::Closure(pc, env) => {
-                        let mut env = self.gc.alloc_env(argc as u64, Some(env));
+                        let env = self.gc.alloc_env(argc as u64, Some(env));
 
-                        for i in range(0, argc) {
+                        for _ in range(0, argc) {
                             let arg = self.stack.pop();
                             unsafe { (*env).values.push(arg); }
                         }
@@ -231,7 +231,7 @@ impl VM {
                     value::Primitive(prim) => {
                         let mut args = ~[];
 
-                        for i in range(0, argc) {
+                        for _ in range(0, argc) {
                             let arg = self.stack.pop();
                             args.push(arg);
                         }
