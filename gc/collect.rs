@@ -1,4 +1,4 @@
-use gc::Env;
+use gc;
 use gc::Value;
 use gc::value::Pair;
 use gc::value::Unit;
@@ -71,7 +71,7 @@ impl Drop for GCPair {
 // a garbage-collected Scheme environment
 pub struct GCEnv {
     values: ~[Value],
-    next: Option<Env>,
+    next: Option<gc::Env>,
     mark: bool
 }
 
@@ -209,7 +209,7 @@ impl GC {
         GC::check_node(self.current_mark, self.heap.head);
     }
 
-    pub fn alloc_pair(&mut self) -> Value {
+    pub fn alloc_pair(&mut self) -> gc::Pair {
         let mut p = ~GCPair {
             mark: self.current_mark,
             car: Unit,
@@ -222,10 +222,10 @@ impl GC {
         };
         
         self.heap.insert(p as ~GCollect);
-        Pair(::gc::Pair(ptr))
+        ::gc::Pair(ptr)
     }
 
-    pub fn alloc_env(&mut self, size: u64, next: Option<Env>) -> Env {
+    pub fn alloc_env(&mut self, size: u64, next: Option<gc::Env>) -> gc::Env {
         let mut env = ~GCEnv { 
             values: vec::with_capacity(size as uint),
             mark: self.current_mark,
