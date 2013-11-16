@@ -95,8 +95,24 @@ impl GCollect for GCEnv {
 
 impl GCEnv {
     pub fn store(&mut self, value: &Value, addr: u64) {
-        if addr < self.values.len() as u64 {
-            self.values[addr] = *value;
+        if addr < self.values.capacity() as u64 {
+            if addr < self.values.len() as u64 {
+                self.values[addr] = *value;
+            }
+
+            else if addr == self.values.len() as u64 {
+                self.values.push(*value);
+            }
+
+            else {
+                for _ in range(self.values.len() as u64, addr - 1) {
+                    self.values.push(Unit);
+                }
+
+                self.values.push(*value);
+            }
+
+            return
         }
 
         match self.next {
