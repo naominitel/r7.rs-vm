@@ -44,6 +44,7 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
             Primitive(min),
             Primitive(mul),
             Primitive(div),
+            Primitive(cmp),
             Primitive(eq),
             Primitive(list),
             Primitive(cons),
@@ -52,7 +53,8 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
             Primitive(display),
             Primitive(newline),
             Primitive(setcar),
-            Primitive(setcdr)
+            Primitive(setcdr),
+            Primitive(exit)
         ];
     };
     env
@@ -112,6 +114,24 @@ fn div(_: ~[Value], _: &mut VM) -> Value {
     fail!("Unimplemented")
 }
 
+fn cmp(vals: ~[Value], _: &mut VM) -> Value {
+    match vals {
+        [Num(v), .. rest] => {
+            for val in rest.iter() {
+                match val {
+                    &Num(v2) if v2 == v => (),
+                    &Num(_) => return Bool(false),
+                    _ => fail!("Bad argument")
+                }
+            }
+
+            Bool(true)
+        }
+
+        _ => fail!("Bad argument")
+    }
+}
+
 fn eq(vals: ~[Value], _: &mut VM) -> Value {
     match vals {
         [v1, v2] => {
@@ -165,7 +185,7 @@ fn cons(vals: ~[Value], vm: &mut VM) -> Value {
         [ref v1, ref v2] => {
             let p = vm.gc.alloc_pair();
             p.setcar(v1);
-            p.setcar(v2);
+            p.setcdr(v2);
             Pair(p)
         }
 
@@ -182,7 +202,7 @@ fn car(vals: ~[Value], _: &mut VM) -> Value {
 
 fn cdr(vals: ~[Value], _: &mut VM) -> Value {
     match vals {
-        [Pair(p)] => p.car(),
+        [Pair(p)] => p.cdr(),
         _ => fail!("Bad arguments")
     }
 }
@@ -213,4 +233,9 @@ fn setcdr(vals: ~[Value], _: &mut VM) -> Value {
     }
 
     Unit
+}
+
+fn exit(_: ~[Value], _: &mut VM) -> Value {
+    // FIXME: handle exit value
+    fail!()
 }
