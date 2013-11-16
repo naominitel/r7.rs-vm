@@ -88,12 +88,10 @@ impl Library {
         f.seek(imports_off as i64, io::SeekSet);
         let imports_count = f.read_be_u64();
 
-        println!("Allocating a vec of size {:u}", imports_count);
         let mut imports = ::std::vec::with_capacity(imports_count as uint);
         for _ in range(0, imports_count) {
             // read libname
             let length = f.read_be_u64();
-            println!("Allocating a libname of size {:u}", length);
             let mut lname = ::std::vec::with_capacity(length as uint);
 
             for _ in range(0, length) {
@@ -116,7 +114,7 @@ impl Library {
 
         let env = gc.alloc_env(exports_count, None);
 
-        println!("Trying to access program text section at {:x}", text_off);
+        debug!("Trying to access program text section at {:x}", text_off);
         f.seek(text_off as i64, io::SeekSet);
         let text_size = f.read_be_u64();
         let mut text = ::std::vec::with_capacity(text_size as uint);
@@ -126,7 +124,7 @@ impl Library {
             text.push(b);
         }
 
-        println!("Sucessfully loaded library");
+        debug!("Sucessfully loaded library");
         ~Library {
             env: env, prog: text, name: name,
             imports: imports, exports: exports_count
@@ -142,7 +140,7 @@ impl Library {
             }
 
             if p.is_file() {
-                println!("Trying {:s}", p.display().to_str());
+                debug!("Trying {:s}", p.display().to_str());
                 Library::load_file(gc, &**p, ~name.clone());
             }
         }

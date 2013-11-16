@@ -1,6 +1,5 @@
 use gc;
 use gc::Value;
-use gc::value::Pair;
 use gc::value::Unit;
 use gc::visit::Visitor;
 use std::vec;
@@ -64,7 +63,7 @@ impl GCollect for GCPair {
 
 impl Drop for GCPair {
     fn drop(&mut self) {
-        println!("Dropping pair whose car is {:?}", self.car);
+        debug!("Dropping pair whose car is {:?}", self.car);
     }
 }
 
@@ -127,7 +126,7 @@ impl GCEnv {
         print("[ ");
 
         for i in self.values.iter() {
-            print!("{:?} ", i);
+            debug!("{:?} ", i);
         }
 
         print("]");
@@ -138,7 +137,7 @@ impl GCEnv {
                 unsafe { (*e).dump() };
             }
 
-            None => println!(" End.")
+            None => debug!(" End.")
         }
     }
 }
