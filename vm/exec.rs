@@ -2,12 +2,12 @@ use common::bytecode;
 use common::bytecode::base;
 use common::bytecode::off;
 use common::bytecode::Opcode;
-use common::bytecode::Read;
 use common::bytecode::Type;
 use gc::Env;
 use gc::GC;
 use gc::value;
 use std::hashmap::HashMap;
+use std::io::Reader;
 use vm::Frame;
 use vm::Library;
 use vm::library::LibName;
@@ -21,6 +21,43 @@ struct VM {
 
     loaded_mods: HashMap<LibName, uint>,
     modules: ~[~Library]
+}
+
+impl Reader for VM {
+    fn read(&mut self, buf: &mut [u8]) -> Option<uint> {
+        let mut ret = 0;
+
+        for i in range(0, buf.len()) {
+            if(!self.eof()) {
+                let b = self.read_u8();
+                buf[i] = b;
+                ret += 1;
+            }
+
+            else {
+                break;
+            }
+        }
+
+        match ret {
+            0 => None,
+            i => Some(i)
+        }
+    }
+
+    fn read_u8(&mut self) -> u8 {
+        let base = base(self.frame.pc);
+        let lib = &self.modules[base];
+
+        let b = lib.prog[off(self.frame.pc)];
+        self.frame.pc += 1;
+        b
+    }
+
+    fn eof(&mut self) -> bool {
+        let base = base(self.frame.pc);
+        self.modules[base].prog.len() == off(self.frame.pc) as uint
+    }
 }
 
 impl VM {
@@ -38,24 +75,13 @@ impl VM {
             modules: mods }
     }
 
-    fn read<T: Read>(&mut self) -> T {
-        let base = base(self.frame.pc);
-        let lib = &self.modules[base];
-
-        do Read::read { 
-            let b = lib.prog[off(self.frame.pc)];
-            self.frame.pc += 1;
-            b
-        }
-    }
-
     fn next_op(&mut self) -> Opcode {
-        let opcode: u8 = self.read();
+        let opcode = self.read_u8();
         unsafe { ::std::cast::transmute(opcode) }
     }
 
     fn next_ty(&mut self) -> Type {
-        let ty: u8 = self.read();
+        let ty = self.read_u8();
         unsafe { ::std::cast::transmute(ty) }
     }
 
@@ -144,11 +170,11 @@ impl VM {
 
     fn exec_instr(&mut self) {
         let opcode = self.next_op();
-        println!("Executing next instruction: {:?}", opcode);
+        debug!("Executing next instruction: {:?}", opcode);
 
         match opcode {
             bytecode::Alloc => {
-                let envsize = self.read();
+                let envsize = self.read_be_u64();
                 self.frame.alloc(self.gc, envsize);
             }
 
@@ -159,13 +185,13 @@ impl VM {
             // stack to env primitives
 
             bytecode::Store => {
-                let addr: u64 = self.read();
+                let addr = self.read_be_u64();
                 let value = self.stack.pop();
                 self.frame.store(&value, addr);
             }
 
             bytecode::Fetch => {
-                let addr: u64 = self.read();
+                let addr = self.read_be_u64();
                 let value = self.frame.fetch(addr);
                 self.stack.push(value);
             }
@@ -183,7 +209,7 @@ impl VM {
                     }
 
                     bytecode::Int => {
-                        let i: i64 = self.read();
+                        let i = self.read_be_i64();
                         value::Num(i)
                     }
 
@@ -193,7 +219,7 @@ impl VM {
 
                     bytecode::Fun => {
                         // closure
-                        let arg: u32 = self.read();
+                        let arg = self.read_be_u32();
                         let base = self.frame.pc & 0xFFFF0000;
                         let clpc = (arg as u64) | base;
                         let env = self.frame.env;
@@ -214,7 +240,7 @@ impl VM {
 
             bytecode::Call => {
                 let fval = self.stack.pop();
-                let argc: u8 = self.read();
+                let argc = self.read_u8();
 
                 match fval {
                     value::Closure(pc, env) => {
@@ -245,7 +271,7 @@ impl VM {
             }
 
             bytecode::Jump => {
-                let dst: u32 = self.read();
+                let dst = self.read_be_u32();
                 self.frame.pc = self.frame.pc & 0x00000000;
                 self.frame.pc = self.frame.pc | (dst as u64);
             }
@@ -269,9 +295,9 @@ impl VM {
     }
 
     fn exec_module(&mut self) {
-        println!("Begin module execution");
+        debug!("Begin module execution");
         let prog_len = self.modules.last().prog.len();
-        println!("Module section is {:u} long", prog_len);
+        debug!("Module section is {:u} long", prog_len);
 
         while (off(self.frame.pc) as uint) < prog_len {
             self.exec_instr();

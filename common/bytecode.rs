@@ -1,6 +1,3 @@
-pub use self::read::Read;
-mod read;
-
 #[repr(u8)]
 pub enum Opcode {
     Nop    = 0x00,
