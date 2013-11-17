@@ -11,14 +11,16 @@ use std::io::Reader;
 use vm::Frame;
 use vm::Library;
 use vm::library::LibName;
-use vm::Stack;
 use vm::primitive::primEnv;
+use vm::Stack;
+use vm::symbols::SymTable;
 
 struct VM {
     frame: ~Frame,
     stack: Stack,
     gc: ~GC,
 
+    sym_table: ~SymTable,
     loaded_mods: HashMap<LibName, uint>,
     modules: ~[~Library]
 }
@@ -69,10 +71,11 @@ impl VM {
         let env = primEnv(gc);
         let frame = Frame::new(env, 0, 0);
         let loaded_mods = HashMap::new();
+        let symtable = SymTable::new();
         let mods = ~[];
 
         ~VM { frame: frame, stack: stack, gc: gc, loaded_mods: loaded_mods,
-            modules: mods }
+            sym_table: symtable, modules: mods }
     }
 
     fn next_op(&mut self) -> Opcode {
@@ -110,14 +113,15 @@ impl VM {
     }
 
     pub fn run(&mut self, lib: ~LibName) {
-        let l = Library::load(self.gc, &*lib, Library::library_path(None));
+        let l = Library::load(self.gc, self.sym_table, &*lib,
+            Library::library_path(None));
         self.load_module(l);
     }
 
     pub fn run_file(&mut self, prog: ~str) {
         let p = Path::new(prog);
         let name = ~[~"main"];
-        let l = Library::load_file(self.gc, &p, ~LibName(name));
+        let l = Library::load_file(self.gc, self.sym_table, &p, ~LibName(name));
         self.load_module(l);
     }
 
@@ -127,7 +131,8 @@ impl VM {
             let m = self.loaded_mods.find_copy(&**i);
 
             let l = if m == None {
-                let l = Library::load(self.gc, *i, Library::library_path(None));
+                let l = Library::load(self.gc, self.sym_table, *i,
+                    Library::library_path(None));
                 self.load_module(l);
                 self.modules.last()
             }
@@ -166,6 +171,8 @@ impl VM {
 
         // exec module
         self.exec_module();
+
+        self.sym_table.dump();
     }
 
     fn exec_instr(&mut self) {
@@ -218,7 +225,11 @@ impl VM {
                     }
 
                     bytecode::Sym => {
-                        fail!("Unimplemented")
+                        let base = base(self.frame.pc);
+                        let arg = self.read_be_u64();
+                        let lib = &self.modules[base];
+                        let h = lib.sym_table[arg];
+                        value::Symbol(h)
                     }
 
                     bytecode::Fun => {

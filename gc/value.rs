@@ -18,6 +18,7 @@ pub enum Value {
     Num(i64),
     Pair(gc::Pair),
     Primitive(vm::Prim),
+    Symbol(vm::Handle),
     Unit
 }
 
@@ -30,6 +31,7 @@ impl Clone for Value {
             &Num(n) => Num(n),
             &Pair(p) => Pair(p),
             &Primitive(p) => Primitive(p),
+            &Symbol(h) => Symbol(h),
             &Unit => Unit
         }
     }
