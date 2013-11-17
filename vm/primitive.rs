@@ -7,6 +7,7 @@ use gc::value::Null;
 use gc::value::Num;
 use gc::value::Pair;
 use gc::value::Primitive;
+use gc::value::Symbol;
 use gc::value::Unit;
 use vm::VM;
 
@@ -153,16 +154,13 @@ fn eq(vals: ~[Value], _: &mut VM) -> Value {
                     fail!("Unimplemented")
                 }
 
-                (Num(i), Num(j)) => {
-                    Bool(i == j)
-                }
-
-                (Bool(b1), Bool(b2)) => {
-                    Bool(b1 == b2)
-                }
+                (Num(i), Num(j)) => Bool(i == j),
+                (Bool(b1), Bool(b2)) => Bool(b1 == b2),
+                (Symbol(h1), Symbol(h2)) => Bool(h1 == h2),
 
                 (Null, Null) => Bool(true),
                 (Unit, Unit) => Bool(true),
+
                 _ => Bool(false)
             }
         }

@@ -4,7 +4,14 @@ struct Symbol {
     name: ~str
 }
 
-pub type Handle = *Symbol;
+#[deriving(Eq, Clone)]
+pub struct Handle(*Symbol);
+
+impl ToStr for Handle {
+    fn to_str(&self) -> ~str {
+        unsafe { (***self).name.to_owned() }
+    }
+}
 
 impl Symbol {
     // allocates a new symbol to put on the symbol table
@@ -20,11 +27,7 @@ impl Symbol {
         // keep a list of all allocated symbols to avoid
         // memleaks when the VM terminates
         tb.syms.push(sym);
-        ptr
-    }
-
-    fn to_string(&self) -> ~str {
-        self.name.clone()
+        Handle(ptr)
     }
 }
 
