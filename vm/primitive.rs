@@ -157,6 +157,10 @@ fn eq(vals: ~[Value], _: &mut VM) -> Value {
                     Bool(i == j)
                 }
 
+                (Bool(b1), Bool(b2)) => {
+                    Bool(b1 == b2)
+                }
+
                 (Null, Null) => Bool(true),
                 (Unit, Unit) => Bool(true),
                 _ => Bool(false)

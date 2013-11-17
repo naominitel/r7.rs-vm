@@ -205,7 +205,11 @@ impl VM {
                     } 
 
                     bytecode::Bool => {
-                        fail!("Unimplemented")
+                        let i = self.read_u8();
+                        match i {
+                            0 => value::Bool(false),
+                            _ => value::Bool(true)
+                        }
                     }
 
                     bytecode::Int => {
@@ -274,6 +278,20 @@ impl VM {
                 let dst = self.read_be_u32();
                 self.frame.pc = self.frame.pc & 0x00000000;
                 self.frame.pc = self.frame.pc | (dst as u64);
+            }
+
+            bytecode::Branch => {
+                let dst = self.read_be_u32();
+                let expr = self.stack.pop();
+
+                match expr {
+                    value::Bool(false) => {
+                        self.frame.pc = self.frame.pc & 0x00000000;
+                        self.frame.pc = self.frame.pc | (dst as u64);
+                    }
+
+                    _ => ()
+                }
             }
 
             bytecode::Return => {
