@@ -18,6 +18,18 @@ impl Clone for Pair {
     }
 }
 
+impl ToStr for Pair {
+    fn to_str(&self) -> ~str {
+        let car = unsafe { (***self).car.to_str() };
+
+        match unsafe { (***self).cdr } {
+            value::Pair(p) => format!("{:s} {:s}", car, p.to_str()),
+            value::Null => format!("{:s}", car),
+            v => format!("{:s} . {:s}", car, v.to_str())
+        }
+    }
+}
+
 impl Pair {
     pub fn car(self) -> Value {
         unsafe { (**self).car }

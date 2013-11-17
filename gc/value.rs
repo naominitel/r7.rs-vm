@@ -37,6 +37,22 @@ impl Clone for Value {
     }
 }
 
+impl ToStr for Value {
+    fn to_str(&self) -> ~str {
+        match self {
+            &Bool(true) => ~"#t",
+            &Bool(false) => ~"#f",
+            &Closure(_, _) => ~"#<procedure>",
+            &Null => ~"'()",
+            &Num(i) => format!("{:i}", i),
+            &Pair(p) => p.to_str(),
+            &Primitive(_) => ~"#<procedure>",
+            &Symbol(h) => format!("'{:s}", h.to_str()),
+            &Unit => ~""
+        }
+    }
+}
+
 pub fn setcar(val: &mut Value, car: &Value) {
     match val {
         &Pair(p) => {

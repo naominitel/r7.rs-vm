@@ -210,7 +210,7 @@ fn cdr(vals: ~[Value], _: &mut VM) -> Value {
 }
 
 fn display(vals: ~[Value], _: &mut VM) -> Value {
-    print!("{:?}", vals[0]);
+    print!("{:s}", vals[0].to_str());
     Unit
 }
 
