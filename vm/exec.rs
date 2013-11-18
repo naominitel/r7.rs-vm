@@ -11,6 +11,7 @@ use std::io::Reader;
 use vm::Frame;
 use vm::Library;
 use vm::library::LibName;
+use vm::primitive::Prim;
 use vm::primitive::primEnv;
 use vm::Stack;
 use vm::symbols::SymTable;
@@ -175,6 +176,18 @@ impl VM {
         self.sym_table.dump();
     }
 
+    fn call_primitive(&mut self, prim: Prim, argc: u8) {
+        let mut args = ~[];
+
+        for _ in range(0, argc) {
+            let arg = self.stack.pop();
+            args.push(arg);
+        }
+
+        let ret = prim(args, self);
+        self.stack.push(ret);
+    }
+
     fn exec_instr(&mut self) {
         let opcode = self.next_op();
         debug!("Executing next instruction: {:?}", opcode);
@@ -270,15 +283,7 @@ impl VM {
                     }
 
                     value::Primitive(prim) => {
-                        let mut args = ~[];
-
-                        for _ in range(0, argc) {
-                            let arg = self.stack.pop();
-                            args.push(arg);
-                        }
-
-                        let ret = prim(args, self);
-                        self.stack.push(ret);
+                        self.call_primitive(prim, argc);
                     }
 
                     _ => fail!("Attempting to call a non-function value")
@@ -307,6 +312,13 @@ impl VM {
                         self.frame.sp = self.stack.len();
                         self.frame.pc = pc;
                         self.frame.env = env;
+                    }
+
+                    // the compiler doesn't make the difference between
+                    // a closure and a primitive, so a tail-call to a primitive
+                    // may happen here
+                    value::Primitive(prim) => {
+                        self.call_primitive(prim, argc);
                     }
 
                     _ => fail!("Attempting a tail-call on a non-closure value")
