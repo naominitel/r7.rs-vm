@@ -9,6 +9,7 @@ used to implement other similar languages. The virtual machine is written in Rus
 The VM language supports various operations useful for functional programming :
 * Dynamic environment allocation and deletion
 * Creation of lexical closures
+* Properly *tail-recursive* (Tail-call and last-call optimization)
 * Dynamic typing
 * Modules and libraries
 * Garbage collecting
@@ -28,4 +29,12 @@ Compiling requires a fairly recent version of Rustc (built successfully with Rus
 ```
 rustc main.rs
 ./main
+```
+
+To test it, you will also need [https://github.com/naominitel/r7.rs-compiler](the compiler).
+Assuming the VM is in ```vm``` and the compiler in ```compiler```:
+
+```
+./compiler/scmc test.scm
+./vm/scmrun out.bin
 ```
