@@ -9,7 +9,8 @@ pub enum Opcode {
     Fetch  = 0x08,
     Branch = 0x09,
     Store  = 0x0A,
-    Alloc  = 0x0C
+    Alloc  = 0x0C,
+    Tcall  = 0x0D,
 }
 
 #[repr(u8)]

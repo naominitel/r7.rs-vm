@@ -285,6 +285,34 @@ impl VM {
                 }
             }
 
+            bytecode::Tcall => {
+                // last call optimization
+                // call a closure without allocating a frame
+                let fval = self.stack.pop();
+                let argc = self.read_u8();
+
+                match fval {
+                    value::Closure(pc, env) => {
+                        let env = self.gc.alloc_env(argc as u64, Some(env));
+
+                        for _ in range (0, argc) {
+                            let arg = self.stack.pop();
+                            unsafe { (*env).values.push(arg); }
+                        }
+
+                        // do not allocate a frame to prevent O(n) memory
+                        // usage for recursive last calls. The current env
+                        // of the frame will be collected if it is not still
+                        // captured by a visible closure
+                        self.frame.sp = self.stack.len();
+                        self.frame.pc = pc;
+                        self.frame.env = env;
+                    }
+
+                    _ => fail!("Attempting a tail-call on a non-closure value")
+                }
+            }
+
             bytecode::Jump => {
                 let dst = self.read_be_u32();
                 self.frame.pc = self.frame.pc & 0x00000000;
@@ -324,12 +352,24 @@ impl VM {
     }
 
     fn exec_module(&mut self) {
+        use gc::visit::Visitor;
+
         debug!("Begin module execution");
         let prog_len = self.modules.last().prog.len();
         debug!("Module section is {:u} long", prog_len);
+        let mut counter = 0;
 
         while (off(self.frame.pc) as uint) < prog_len {
             self.exec_instr();
+            counter += 1;
+
+            if counter == 20 {
+                // garbage-collect
+                let visitors = &mut [&mut self.stack as &mut Visitor,
+                    &mut *self.frame as &mut Visitor];
+                self.gc.sweep(visitors);
+                counter = 0;
+            }
         }
     }
 }
