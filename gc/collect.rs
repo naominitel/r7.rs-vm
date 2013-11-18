@@ -180,7 +180,7 @@ impl GC {
 
     fn mark(&mut self, roots: &mut [&mut Visitor]) {
         for v in roots.mut_iter() {
-            v.visit(true);
+            v.visit(self.current_mark);
         }
     }
 
@@ -219,6 +219,7 @@ impl GC {
     }
 
     pub fn sweep(&mut self, roots: &mut [&mut Visitor]) {
+        debug!("GC: Start collection");
         self.current_mark = !self.current_mark;
         self.mark(roots);
         GC::check_node(self.current_mark, self.heap.head);

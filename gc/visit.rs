@@ -26,7 +26,7 @@ impl Visitor for Frame {
 
 impl Visitor for Env {
     fn visit(&mut self, m: bool) {
-        (*self).visit(m);
+        unsafe { (**self).visit(m); }
     }
 }
 
