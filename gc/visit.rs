@@ -1,7 +1,9 @@
-use gc::Env;
-use gc::Value;
-use gc::value::Pair;
-use gc::value::Closure;
+use gc::collect::GCollect;
+use gc::env::Env;
+use gc::env::GCEnv;
+use gc::pair::Pair;
+use gc::pair::GCPair;
+use gc::value;
 use vm::Frame;
 use vm::Stack;
 
@@ -30,17 +32,33 @@ impl Visitor for Env {
     }
 }
 
-impl Visitor for ::gc::Pair {
+impl Visitor for GCEnv {
+    fn visit(&mut self, m: bool) {
+        if !self.is_marked(m) {
+            self.mark(m);
+        }
+    }
+}
+
+impl Visitor for Pair {
     fn visit(&mut self, m: bool) {
         unsafe { (***self).visit(m); }
     }
 }
 
-impl Visitor for Value {
+impl Visitor for GCPair {
+    fn visit(&mut self, m: bool) {
+        if !self.is_marked(m) {
+            self.mark(m);
+        }
+    }
+}
+
+impl Visitor for value::Value {
     fn visit(&mut self, m: bool) {
         match self {
-            &Pair(ref mut pair) => { pair.visit(m); }
-            &Closure(_, ref mut env) => { env.visit(m); }
+            &value::Pair(ref mut pair) => { pair.visit(m); }
+            &value::Closure(_, ref mut env) => { env.visit(m); }
 
             // values other than pairs and closures
             // doesn't need to be GC'd
