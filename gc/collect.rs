@@ -1,4 +1,5 @@
 use gc;
+use gc::closure::GClosure;
 use gc::env::GCEnv;
 use gc::pair::GCPair;
 use gc::value;
@@ -119,5 +120,23 @@ impl GC {
 
         self.heap.insert(env as ~GCollect);
         ptr
+    }
+
+    pub fn alloc_closure(&mut self, arity: u8, variadic: bool,
+        env: gc::Env, pc: u64) -> gc::Closure {
+        let mut cl = ~GClosure {
+            pc: pc,
+            arity: arity,
+            env: env,
+            variadic: variadic,
+            mark: self.current_mark
+        };
+        let ptr = {
+            let r: &mut GClosure = cl;
+            r as *mut GClosure
+        };
+
+        self.heap.insert(cl as ~GCollect);
+        gc::Closure(ptr)
     }
 }

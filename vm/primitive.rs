@@ -142,8 +142,8 @@ fn eq(vals: ~[Value], _: &mut VM) -> Value {
                     Bool((*p1) == (*p2))
                 }
 
-                (Closure(p1, e1), Closure(p2, e2)) => {
-                    Bool((p1 == p2) && (e1 == e2))
+                (Closure(cl1), Closure(cl2)) => {
+                    Bool((*cl1) == (*cl2))
                 }
 
                 (Primitive(p1), Primitive(p2)) => {

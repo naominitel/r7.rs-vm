@@ -13,7 +13,7 @@ use vm;
 // FIXME: bug #10501 #[deriving(Clone)]
 pub enum Value {
     Bool(bool),
-    Closure(u64, gc::Env),
+    Closure(gc::Closure),
     Null,
     Num(i64),
     Pair(gc::Pair),
@@ -26,7 +26,7 @@ impl Clone for Value {
     fn clone(&self) -> Value {
         match self {
             &Bool(b) => Bool(b),
-            &Closure(pc, e) => Closure(pc, e),
+            &Closure(cl) => Closure(cl),
             &Null => Null,
             &Num(n) => Num(n),
             &Pair(p) => Pair(p),
@@ -42,7 +42,7 @@ impl ToStr for Value {
         match self {
             &Bool(true) => ~"#t",
             &Bool(false) => ~"#f",
-            &Closure(_, _) => ~"#<procedure>",
+            &Closure(_) => ~"#<procedure>",
             &Null => ~"'()",
             &Num(i) => format!("{:i}", i),
             &Pair(p) => p.to_str(),

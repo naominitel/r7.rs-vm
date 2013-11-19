@@ -248,10 +248,13 @@ impl VM {
                     bytecode::Fun => {
                         // closure
                         let arg = self.read_be_u32();
+                        // FIXME: let arity = self.read_u8();
                         let base = self.frame.pc & 0xFFFF0000;
                         let clpc = (arg as u64) | base;
                         let env = self.frame.env;
-                        value::Closure(clpc, env)
+
+                        value::Closure(self.gc.alloc_closure(
+                            0, false, env, clpc))
                     }
 
                     bytecode::Prim => {
@@ -271,15 +274,15 @@ impl VM {
                 let argc = self.read_u8();
 
                 match fval {
-                    value::Closure(pc, env) => {
-                        let env = self.gc.alloc_env(argc as u64, Some(env));
+                    value::Closure(cl) => {
+                        let env = self.gc.alloc_env(argc as u64, Some(cl.env()));
 
                         for _ in range(0, argc) {
                             let arg = self.stack.pop();
                             unsafe { (*env).values.push(arg); }
                         }
 
-                        self.push_frame(pc, env);
+                        self.push_frame(cl.pc(), env);
                     }
 
                     value::Primitive(prim) => {
@@ -297,8 +300,8 @@ impl VM {
                 let argc = self.read_u8();
 
                 match fval {
-                    value::Closure(pc, env) => {
-                        let env = self.gc.alloc_env(argc as u64, Some(env));
+                    value::Closure(cl) => {
+                        let env = self.gc.alloc_env(argc as u64, Some(cl.env()));
 
                         for _ in range (0, argc) {
                             let arg = self.stack.pop();
@@ -310,7 +313,7 @@ impl VM {
                         // of the frame will be collected if it is not still
                         // captured by a visible closure
                         self.frame.sp = self.stack.len();
-                        self.frame.pc = pc;
+                        self.frame.pc = cl.pc();
                         self.frame.env = env;
                     }
 
