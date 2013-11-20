@@ -3,6 +3,7 @@ use common::bytecode::base;
 use common::bytecode::off;
 use common::bytecode::Opcode;
 use common::bytecode::Type;
+use gc::Closure;
 use gc::Env;
 use gc::GC;
 use gc::value;
@@ -12,6 +13,7 @@ use vm::Frame;
 use vm::Library;
 use vm::library::LibName;
 use vm::primitive::primEnv;
+use vm::primitive;
 use vm::Stack;
 use vm::symbols::SymTable;
 
@@ -175,6 +177,47 @@ impl VM {
         self.sym_table.dump();
     }
 
+    // Returns an environment containings the arguments of a closure,
+    // taken on the stack
+    #[inline(always)]
+    fn get_args_env(&mut self, argc: u8, cl: Closure) -> Env {
+        let arity = cl.arity();
+        let variadic = cl.variadic();
+
+        if variadic {
+            if argc < arity {
+                fail!("Wrong number of arguments");
+            }
+
+            let env = self.gc.alloc_env((arity + 1) as u64, Some(cl.env()));
+
+            for _ in range(0, arity) {
+                let arg = self.stack.pop();
+                unsafe { (*env).values.push(arg); }
+            }
+
+            let va_count = argc - arity;
+            let va_args = primitive::list(va_count, self);
+            unsafe { (*env).values.push(va_args); }
+            env
+        }
+
+        else {
+            if argc != arity {
+                fail!("Wrong number of arguments");
+            }
+
+            let env = self.gc.alloc_env(argc as u64, Some(cl.env()));
+
+            for _ in range(0, argc) {
+                let arg = self.stack.pop();
+                unsafe { (*env).values.push(arg); }
+            }
+
+            env
+        }
+    }
+
     fn exec_instr(&mut self) {
         let opcode = self.next_op();
         debug!("Executing next instruction: {:?}", opcode);
@@ -235,13 +278,14 @@ impl VM {
                     bytecode::Fun => {
                         // closure
                         let arg = self.read_be_u32();
-                        // FIXME: let arity = self.read_u8();
+                        let arity = self.read_u8();
+                        let variadic = (self.read_u8() != 0x00);
                         let base = self.frame.pc & 0xFFFF0000;
                         let clpc = (arg as u64) | base;
                         let env = self.frame.env;
 
                         value::Closure(self.gc.alloc_closure(
-                            0, false, env, clpc))
+                            arity, variadic, env, clpc))
                     }
 
                     bytecode::Prim => {
@@ -262,13 +306,7 @@ impl VM {
 
                 match fval {
                     value::Closure(cl) => {
-                        let env = self.gc.alloc_env(argc as u64, Some(cl.env()));
-
-                        for _ in range(0, argc) {
-                            let arg = self.stack.pop();
-                            unsafe { (*env).values.push(arg); }
-                        }
-
+                        let env = self.get_args_env(argc, cl);
                         self.push_frame(cl.pc(), env);
                     }
 
@@ -289,12 +327,7 @@ impl VM {
 
                 match fval {
                     value::Closure(cl) => {
-                        let env = self.gc.alloc_env(argc as u64, Some(cl.env()));
-
-                        for _ in range (0, argc) {
-                            let arg = self.stack.pop();
-                            unsafe { (*env).values.push(arg); }
-                        }
+                        let env = self.get_args_env(argc, cl);
 
                         // do not allocate a frame to prevent O(n) memory
                         // usage for recursive last calls. The current env
