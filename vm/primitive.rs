@@ -182,17 +182,21 @@ fn eq(argc: u8, vm: &mut VM) -> Value {
     }
 }
 
-fn list(argc: u8, vm: &mut VM) -> Value {
+pub fn list(argc: u8, vm: &mut VM) -> Value {
     let mut ret = Null;
+    let mut i = argc as uint;
+    let stlen = vm.stack.len();
 
-    for _ in range(0, argc) {
-        let v = getarg(vm);
+    while i > 0 {
+        let v = vm.stack[stlen - i];
         let pair = vm.gc.alloc_pair();
         pair.setcar(&v);
         pair.setcdr(&ret);
-        ret = Pair(pair)
+        ret = Pair(pair);
+        i = i - 1;
     }
 
+    vm.stack.truncate(stlen - argc as uint);
     ret
 }
 
