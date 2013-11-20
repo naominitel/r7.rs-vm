@@ -11,7 +11,7 @@ use gc::value::Symbol;
 use gc::value::Unit;
 use vm::VM;
 
-pub type Prim = fn(~[Value], &mut VM) -> Value;
+pub type Prim = fn(argc: u8, &mut VM) -> Value;
 
 /*
 static env: &'static GCEnv = &GCEnv {
@@ -61,13 +61,18 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
     env
 }
 
+#[inline(always)]
+fn getarg(vm: &mut VM) -> Value {
+    vm.stack.pop()
+}
+
 // default primitives
 
-fn add(vals: ~[Value], _: &mut VM) -> Value {
+fn add(argc: u8, vm: &mut VM) -> Value {
     let mut res = 0;
 
-    for v in vals.move_iter() {
-        match v {
+    for _ in range(0, argc) {
+        match getarg(vm) {
             Num(n) => res += n,
             _ => fail!("Value is not a number")
         }
@@ -76,16 +81,19 @@ fn add(vals: ~[Value], _: &mut VM) -> Value {
     Num(res)
 }
 
-fn min(vals: ~[Value], _: &mut VM) -> Value {
-    match vals {
-        [] => fail!("No arguments"),
-        [Num(i)] => Num(-i),
-        [Num(i), .. r ] => {
+fn min(argc: u8, vm: &mut VM) -> Value {
+    if argc == 0 {
+        fail!("No arguments")
+    }
+
+    match getarg(vm) {
+        Num(i) if argc == 1 => Num(-i),
+        Num(i) => {
             let mut res = i;
 
-            for v in r.iter() {
-                match v {
-                    &Num(n) => res -= n,
+            for _ in range(0, argc - 1) {
+                match getarg(vm) {
+                    Num(n) => res -= n,
                     _ => fail!("Value is not a number")
                 }
             }
@@ -97,11 +105,11 @@ fn min(vals: ~[Value], _: &mut VM) -> Value {
     }
 }
 
-fn mul(vals: ~[Value], _: &mut VM) -> Value {
+fn mul(argc: u8, vm: &mut VM) -> Value {
     let mut res = 1;
 
-    for v in vals.move_iter() {
-        match v {
+    for _ in range(0, argc) {
+        match getarg(vm) {
             Num(n) => res *= n,
             _ => fail!("Value is not a number")
         }
@@ -110,18 +118,22 @@ fn mul(vals: ~[Value], _: &mut VM) -> Value {
     Num(res)
 }
 
-fn div(_: ~[Value], _: &mut VM) -> Value {
+fn div(_: u8, _: &mut VM) -> Value {
     // requires exact numbers implementation
     fail!("Unimplemented")
 }
 
-fn cmp(vals: ~[Value], _: &mut VM) -> Value {
-    match vals {
-        [Num(v), .. rest] => {
-            for val in rest.iter() {
-                match val {
-                    &Num(v2) if v2 == v => (),
-                    &Num(_) => return Bool(false),
+fn cmp(argc: u8, vm: &mut VM) -> Value {
+    if argc < 2 {
+        fail!("Wrong number of arguments")
+    }
+
+    match getarg(vm) {
+        Num(v) => {
+            for _ in range(0, argc - 1) {
+                match getarg(vm) {
+                    Num(v2) if v2 == v => (),
+                    Num(_) => return Bool(false),
                     _ => fail!("Bad argument")
                 }
             }
@@ -133,48 +145,50 @@ fn cmp(vals: ~[Value], _: &mut VM) -> Value {
     }
 }
 
-fn eq(vals: ~[Value], _: &mut VM) -> Value {
-    match vals {
-        [v1, v2] => {
-            match (v1, v2) {
-                (Pair(p1), Pair(p2)) => {
-                    // eq do object-compareason
-                    Bool((*p1) == (*p2))
-                }
+fn eq(argc: u8, vm: &mut VM) -> Value {
+    if argc != 2 {
+        fail!("Wrong number of arguments");
+    }
 
-                (Closure(cl1), Closure(cl2)) => {
-                    Bool((*cl1) == (*cl2))
-                }
+    let v1 = getarg(vm);
+    let v2 = getarg(vm);
 
-                (Primitive(p1), Primitive(p2)) => {
-                    // FIXME: raw function pointers compareason
-                    // are not allowed. One should change primitive
-                    // internal representation
-                    // Bool(p1 == p2)
-                    fail!("Unimplemented")
-                }
-
-                (Num(i), Num(j)) => Bool(i == j),
-                (Bool(b1), Bool(b2)) => Bool(b1 == b2),
-                (Symbol(h1), Symbol(h2)) => Bool(h1 == h2),
-
-                (Null, Null) => Bool(true),
-                (Unit, Unit) => Bool(true),
-
-                _ => Bool(false)
-            }
+    match (v1, v2) {
+        (Pair(p1), Pair(p2)) => {
+            // eq do object-compareason
+            Bool((*p1) == (*p2))
         }
 
-        _ => fail!("Wrong number of parameters")
+        (Closure(cl1), Closure(cl2)) => {
+            Bool((*cl1) == (*cl2))
+        }
+
+        (Primitive(p1), Primitive(p2)) => {
+            // FIXME: raw function pointers compareason
+            // are not allowed. One should change primitive
+            // internal representation
+            // Bool(p1 == p2)
+            fail!("Unimplemented")
+        }
+
+        (Num(i), Num(j)) => Bool(i == j),
+        (Bool(b1), Bool(b2)) => Bool(b1 == b2),
+        (Symbol(h1), Symbol(h2)) => Bool(h1 == h2),
+
+        (Null, Null) => Bool(true),
+        (Unit, Unit) => Bool(true),
+
+        _ => Bool(false)
     }
 }
 
-fn list(vals: ~[Value], vm: &mut VM) -> Value {
+fn list(argc: u8, vm: &mut VM) -> Value {
     let mut ret = Null;
 
-    for v in vals.rev_iter() {
+    for _ in range(0, argc) {
+        let v = getarg(vm);
         let pair = vm.gc.alloc_pair();
-        pair.setcar(v);
+        pair.setcar(&v);
         pair.setcdr(&ret);
         ret = Pair(pair)
     }
@@ -182,62 +196,79 @@ fn list(vals: ~[Value], vm: &mut VM) -> Value {
     ret
 }
 
-fn cons(vals: ~[Value], vm: &mut VM) -> Value {
-    match vals {
-        [ref v1, ref v2] => {
-            let p = vm.gc.alloc_pair();
-            p.setcar(v1);
-            p.setcdr(v2);
-            Pair(p)
-        }
+fn cons(argc: u8, vm: &mut VM) -> Value {
+    if argc != 2 {
+        fail!("Wrong number of arguments")
+    }
 
-        _ => fail!("Bad argument count")
+    let v1 = getarg(vm);
+    let v2 = getarg(vm);
+    let p = vm.gc.alloc_pair();
+
+    p.setcar(&v1);
+    p.setcdr(&v2);
+    Pair(p)
+}
+
+fn car(argc: u8, vm: &mut VM) -> Value {
+    if argc != 1 {
+        fail!("Bad arguments")
+    }
+
+    match getarg(vm) {
+        Pair(p) => p.car(),
+        _ => fail!("Bad argument")
     }
 }
 
-fn car(vals: ~[Value], _: &mut VM) -> Value {
-    match vals {
-        [Pair(p)] => p.car(),
+fn cdr(argc: u8, vm: &mut VM) -> Value {
+    if argc != 1 {
+        fail!("Bad arguments")
+    }
+
+    match getarg(vm) {
+        Pair(p) => p.cdr(),
         _ => fail!("Bad arguments")
     }
 }
 
-fn cdr(vals: ~[Value], _: &mut VM) -> Value {
-    match vals {
-        [Pair(p)] => p.cdr(),
-        _ => fail!("Bad arguments")
-    }
-}
-
-fn display(vals: ~[Value], _: &mut VM) -> Value {
-    print!("{:s}", vals[0].to_str());
+fn display(_: u8, vm: &mut VM) -> Value {
+    print!("{:s}", getarg(vm).to_str());
     Unit
 }
 
-fn newline(_: ~[Value], _: &mut VM) -> Value {
+fn newline(_: u8, _: &mut VM) -> Value {
     print("\n");
     Unit
 }
 
-fn setcar(vals: ~[Value], _: &mut VM) -> Value {
-    match vals {
-        [Pair(p), ref v] => p.setcar(v),
+fn setcar(argc: u8, vm: &mut VM) -> Value {
+    if argc != 2 {
+        fail!("Wrong number of arguments")
+    }
+
+    match getarg(vm) {
+        Pair(p) => p.setcar(&getarg(vm)),
         _ => fail!("Bad arguments")
     }
 
     Unit
 }
 
-fn setcdr(vals: ~[Value], _: &mut VM) -> Value {
-    match vals {
-        [Pair(p), ref v] => p.setcdr(v),
+fn setcdr(argc: u8, vm: &mut VM) -> Value {
+    if argc != 2 {
+        fail!("Wrong number of arguments")
+    }
+
+    match getarg(vm) {
+        Pair(p) => p.setcdr(&getarg(vm)),
         _ => fail!("Bad arguments")
     }
 
     Unit
 }
 
-fn exit(_: ~[Value], _: &mut VM) -> Value {
+fn exit(_: u8, _: &mut VM) -> Value {
     // FIXME: handle exit value
     fail!()
 }
