@@ -44,9 +44,9 @@ impl ToStr for Pair {
     fn to_str(&self) -> ~str {
         let car = unsafe { (***self).car.to_str() };
 
-        match unsafe { (***self).cdr } {
-            value::Pair(p) => format!("{:s} {:s}", car, p.to_str()),
-            value::Null => format!("{:s}", car),
+        match unsafe { &(***self).cdr } {
+            &value::Pair(p) => format!("{:s} {:s}", car, p.to_str()),
+            &value::Null => format!("{:s}", car),
             v => format!("{:s} . {:s}", car, v.to_str())
         }
     }
@@ -54,19 +54,19 @@ impl ToStr for Pair {
 
 impl Pair {
     pub fn car(self) -> value::Value {
-        unsafe { (**self).car }
+        unsafe { (**self).car.clone() }
     }
 
     pub fn cdr(self) -> value::Value {
-        unsafe { (**self).cdr }
+        unsafe { (**self).cdr.clone() }
     }
 
     pub fn setcar(self, car: &value::Value) {
-        unsafe { (**self).car = *car; }
+        unsafe { (**self).car = car.clone(); }
     }
 
     pub fn setcdr(self, cdr: &value::Value) {
-        unsafe { (**self).cdr = *cdr; }
+        unsafe { (**self).cdr = cdr.clone(); }
     }
 }
 

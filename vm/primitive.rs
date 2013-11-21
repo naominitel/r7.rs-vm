@@ -9,6 +9,9 @@ use gc::value::Pair;
 use gc::value::Primitive;
 use gc::value::Symbol;
 use gc::value::Unit;
+use gmp::Mpz;
+use std::num::One;
+use std::num::Zero;
 use vm::VM;
 
 pub type Prim = fn(argc: u8, &mut VM) -> Value;
@@ -69,11 +72,11 @@ fn getarg(vm: &mut VM) -> Value {
 // default primitives
 
 fn add(argc: u8, vm: &mut VM) -> Value {
-    let mut res = 0;
+    let mut res: Mpz = Zero::zero();
 
     for _ in range(0, argc) {
         match getarg(vm) {
-            Num(n) => res += n,
+            Num(n) => res = res.add(&n),
             _ => fail!("Value is not a number")
         }
     }
@@ -87,13 +90,13 @@ fn min(argc: u8, vm: &mut VM) -> Value {
     }
 
     match getarg(vm) {
-        Num(i) if argc == 1 => Num(-i),
+        Num(ref i) if argc == 1 => Num(-i),
         Num(i) => {
             let mut res = i;
 
             for _ in range(0, argc - 1) {
                 match getarg(vm) {
-                    Num(n) => res -= n,
+                    Num(n) => res = res.sub(&n),
                     _ => fail!("Value is not a number")
                 }
             }
@@ -106,11 +109,11 @@ fn min(argc: u8, vm: &mut VM) -> Value {
 }
 
 fn mul(argc: u8, vm: &mut VM) -> Value {
-    let mut res = 1;
+    let mut res: Mpz = One::one();
 
     for _ in range(0, argc) {
         match getarg(vm) {
-            Num(n) => res *= n,
+            Num(n) => res = res.mul(&n),
             _ => fail!("Value is not a number")
         }
     }
@@ -132,7 +135,7 @@ fn cmp(argc: u8, vm: &mut VM) -> Value {
         Num(v) => {
             for _ in range(0, argc - 1) {
                 match getarg(vm) {
-                    Num(v2) if v2 == v => (),
+                    Num(ref v2) if *v2 == v => (),
                     Num(_) => return Bool(false),
                     _ => fail!("Bad argument")
                 }
@@ -188,7 +191,7 @@ pub fn list(argc: u8, vm: &mut VM) -> Value {
     let stlen = vm.stack.len();
 
     while i > 0 {
-        let v = vm.stack[stlen - i];
+        let v = vm.stack[stlen - i].clone();
         let pair = vm.gc.alloc_pair();
         pair.setcar(&v);
         pair.setcdr(&ret);

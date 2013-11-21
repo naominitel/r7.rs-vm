@@ -1,0 +1,3 @@
+[submodule "rust-gmp"]
+	path = rust-gmp
+	url = https://github.com/thestinger/rust-gmp

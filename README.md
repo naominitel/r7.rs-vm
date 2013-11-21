@@ -26,11 +26,19 @@ Future features include:
 
 ### Compiling and testing
 
-Compiling requires a fairly recent version of Rustc (built successfully with Rust 0.9-master on nov. 11 2013) :
+Compiling requires a fairly recent version of Rustc (built successfully with Rust 0.9-master on nov. 11 2013).
+You will also need the [http://gmplib.org/](GNU MultiPrecision) arithmetic library.
+
+First compile the GMP binding library:
 
 ```
-rustc main.rs
-./main
+rustc rust-gmp/gmp.rs `pkg-config --libs gmp`
+```
+
+Then the VM itself:
+
+```
+rustc main.rs -Lrust-gmp/
 ```
 
 To test it, you will also need [https://github.com/naominitel/r7.rs-compiler](the compiler).

@@ -9,6 +9,7 @@ use gc::GC;
 use gc::value;
 use std::hashmap::HashMap;
 use std::io::Reader;
+use std::num::FromPrimitive;
 use vm::Frame;
 use vm::Library;
 use vm::library::LibName;
@@ -264,7 +265,7 @@ impl VM {
 
                     bytecode::Int => {
                         let i = self.read_be_i64();
-                        value::Num(i)
+                        value::Num(FromPrimitive::from_i64(i).unwrap())
                     }
 
                     bytecode::Sym => {

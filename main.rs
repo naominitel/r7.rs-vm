@@ -3,6 +3,8 @@
 #[deny(non_camel_case_types)];
 #[deny(non_uppercase_statics)];
 
+extern mod gmp;
+
 mod common;
 mod gc;
 mod vm;

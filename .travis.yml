@@ -3,5 +3,7 @@ before_install:
     - sudo apt-get update
 install:
     - sudo apt-get install rust-nightly
+    - sudo apt-get install libgmp3-dev
 script:
-    - rustc main.rs
+    - rustc rust-gmp/gmp.rs `pkg-config --libs gmp`
+    - rustc main.rs -Lrust-gmp/

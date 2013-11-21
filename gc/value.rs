@@ -1,5 +1,6 @@
 use gc;
 use vm;
+use gmp;
 
 // Type for representing Scheme values manipulated by the VM
 // a Value can be either
@@ -15,7 +16,7 @@ pub enum Value {
     Bool(bool),
     Closure(gc::Closure),
     Null,
-    Num(i64),
+    Num(gmp::Mpz),
     Pair(gc::Pair),
     Primitive(vm::Prim),
     Symbol(vm::Handle),
@@ -28,7 +29,7 @@ impl Clone for Value {
             &Bool(b) => Bool(b),
             &Closure(cl) => Closure(cl),
             &Null => Null,
-            &Num(n) => Num(n),
+            &Num(ref n) => Num(n.clone()),
             &Pair(p) => Pair(p),
             &Primitive(p) => Primitive(p),
             &Symbol(h) => Symbol(h),
@@ -44,7 +45,7 @@ impl ToStr for Value {
             &Bool(false) => ~"#f",
             &Closure(_) => ~"#<procedure>",
             &Null => ~"'()",
-            &Num(i) => format!("{:i}", i),
+            &Num(ref i) => format!("{:s}", i.to_str()),
             &Pair(p) => p.to_str(),
             &Primitive(_) => ~"#<procedure>",
             &Symbol(h) => format!("'{:s}", h.to_str()),

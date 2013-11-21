@@ -32,11 +32,11 @@ impl GCEnv {
     pub fn store(&mut self, value: &value::Value, addr: u64) {
         if addr < self.values.capacity() as u64 {
             if addr < self.values.len() as u64 {
-                self.values[addr] = *value;
+                self.values[addr] = value.clone();
             }
 
             else if addr == self.values.len() as u64 {
-                self.values.push(*value);
+                self.values.push(value.clone());
             }
 
             else {
@@ -44,7 +44,7 @@ impl GCEnv {
                     self.values.push(value::Unit);
                 }
 
-                self.values.push(*value);
+                self.values.push(value.clone());
             }
 
             return
@@ -61,7 +61,7 @@ impl GCEnv {
 
     pub fn fetch(&mut self, addr: u64) -> value::Value {
         if addr < self.values.len() as u64 {
-            self.values[addr]
+            self.values[addr].clone()
         }
 
         else { match self.next {
