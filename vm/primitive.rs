@@ -44,21 +44,21 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
     let env = gc.alloc_env(0, None);
     unsafe {
         (*env).values = ~[
-            Primitive(add),
-            Primitive(min),
-            Primitive(mul),
-            Primitive(div),
-            Primitive(cmp),
-            Primitive(eq),
-            Primitive(list),
-            Primitive(cons),
-            Primitive(car),
-            Primitive(cdr),
-            Primitive(display),
-            Primitive(newline),
-            Primitive(setcar),
-            Primitive(setcdr),
-            Primitive(exit)
+            (true, Primitive(add)),
+            (true, Primitive(min)),
+            (true, Primitive(mul)),
+            (true, Primitive(div)),
+            (true, Primitive(cmp)),
+            (true, Primitive(eq)),
+            (true, Primitive(list)),
+            (true, Primitive(cons)),
+            (true, Primitive(car)),
+            (true, Primitive(cdr)),
+            (true, Primitive(display)),
+            (true, Primitive(newline)),
+            (true, Primitive(setcar)),
+            (true, Primitive(setcdr)),
+            (true, Primitive(exit))
         ];
     };
     env

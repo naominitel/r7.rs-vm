@@ -3,8 +3,11 @@ use gc::collect;
 use gc::visit::Visitor;
 
 // a garbage-collected Scheme environment
+
+type EnvItem = (bool, value::Value);
+
 pub struct GCEnv {
-    values: ~[value::Value],
+    values: ~[EnvItem],
     next: Option<Env>,
     mark: bool
 }
@@ -17,8 +20,10 @@ impl collect::GCollect for GCEnv {
     fn mark(&mut self, m: bool) {
         self.mark = m;
 
-        for v in self.values.mut_iter() {
-            v.visit(m);
+        for &(d, ref mut v) in self.values.mut_iter() {
+            if d {
+                v.visit(m);
+            }
         }
 
         match self.next {
@@ -32,19 +37,19 @@ impl GCEnv {
     pub fn store(&mut self, value: &value::Value, addr: u64) {
         if addr < self.values.capacity() as u64 {
             if addr < self.values.len() as u64 {
-                self.values[addr] = value.clone();
+                self.values[addr] = (true, value.clone());
             }
 
             else if addr == self.values.len() as u64 {
-                self.values.push(value.clone());
+                self.values.push((true, value.clone()));
             }
 
             else {
                 for _ in range(self.values.len() as u64, addr - 1) {
-                    self.values.push(value::Unit);
+                    self.values.push((false, value::Unit));
                 }
 
-                self.values.push(value.clone());
+                self.values.push((true, value.clone()));
             }
 
             return
@@ -60,8 +65,18 @@ impl GCEnv {
     }
 
     pub fn fetch(&mut self, addr: u64) -> value::Value {
-        if addr < self.values.len() as u64 {
-            self.values[addr].clone()
+        if addr < self.values.capacity() as u64 {
+            if addr < self.values.len() as u64 {
+                let (d, ref v) = self.values[addr];
+
+                if d {
+                    v.clone()
+                }
+
+                else { fail!("Reference to an identifier before its definition") }
+            }
+
+            else { fail!("Reference to an identifier before its definition") }
         }
 
         else { match self.next {

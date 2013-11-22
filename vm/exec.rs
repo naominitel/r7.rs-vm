@@ -148,7 +148,7 @@ impl VM {
             let mut i = 0;
 
             unsafe {            
-                for e in (*l.env).values.iter() {
+                for &(_, ref e) in (*l.env).values.iter() {
                     (*nenv).store(e, i);
                     i += 1;
                 }
@@ -194,12 +194,12 @@ impl VM {
 
             for _ in range(0, arity) {
                 let arg = self.stack.pop();
-                unsafe { (*env).values.push(arg); }
+                unsafe { (*env).values.push((true, arg)); }
             }
 
             let va_count = argc - arity;
             let va_args = primitive::list(va_count, self);
-            unsafe { (*env).values.push(va_args); }
+            unsafe { (*env).values.push((true, va_args)); }
             env
         }
 
@@ -212,7 +212,7 @@ impl VM {
 
             for _ in range(0, argc) {
                 let arg = self.stack.pop();
-                unsafe { (*env).values.push(arg); }
+                unsafe { (*env).values.push((true, arg)); }
             }
 
             env
@@ -401,7 +401,7 @@ impl VM {
             self.exec_instr();
             counter += 1;
 
-            if counter == 20 {
+            if counter == 2000 {
                 // garbage-collect
                 let visitors = &mut [&mut self.stack as &mut Visitor,
                     &mut *self.frame as &mut Visitor];
