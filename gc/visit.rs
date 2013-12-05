@@ -21,9 +21,9 @@ impl Visitor for Frame {
     fn visit(&mut self, m: bool) {
         self.env.visit(m);
 
-        do self.caller.as_mut().map |f| {
+        self.caller.as_mut().map(|f| {
             f.visit(m);
-        };
+        });
     }
 }
 
