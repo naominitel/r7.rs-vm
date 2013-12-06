@@ -59,7 +59,8 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
             (true, Primitive(newline)),
             (true, Primitive(setcar)),
             (true, Primitive(setcdr)),
-            (true, Primitive(exit))
+            (true, Primitive(exit)),
+            (true, Primitive(assert))
         ];
     };
     env
@@ -277,4 +278,15 @@ fn setcdr(argc: u8, vm: &mut VM) -> Value {
 fn exit(_: u8, _: &mut VM) -> Value {
     // FIXME: handle exit value
     fail!()
+}
+
+fn assert(argc: u8, vm: &mut VM) -> Value {
+    if argc != 1 {
+        fail!("Wrong number of arguments")
+    }
+
+    match getarg(vm) {
+        Bool(true) => Unit,
+        _ => fail!("Assertion failed")
+    }
 }
