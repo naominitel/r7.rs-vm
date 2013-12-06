@@ -10,6 +10,7 @@ use gc::value::Primitive;
 use gc::value::Symbol;
 use gc::value::Unit;
 use gmp::Mpz;
+use std::cast::transmute;
 use std::num::One;
 use std::num::Zero;
 use vm::VM;
@@ -167,11 +168,9 @@ fn eq(argc: u8, vm: &mut VM) -> Value {
         }
 
         (Primitive(p1), Primitive(p2)) => {
-            // FIXME: raw function pointers compareason
-            // are not allowed. One should change primitive
-            // internal representation
-            // Bool(p1 == p2)
-            fail!("Unimplemented")
+            let p1: *() = unsafe { transmute(p1) };
+            let p2: *() = unsafe { transmute(p2) };
+            Bool(p1 == p2)
         }
 
         (Num(i), Num(j)) => Bool(i == j),

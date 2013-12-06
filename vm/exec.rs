@@ -69,7 +69,6 @@ impl VM {
     pub fn new() -> ~VM {
         let stack = ~[];
 
-        // FIXME: add primitive env here
         let mut gc = GC::new();
         let env = primEnv(gc);
         let frame = Frame::new(env, 0, 0);
@@ -130,7 +129,9 @@ impl VM {
 
     fn load_module(&mut self, lib: ~Library) {
         let mut env = Some(primEnv(self.gc));
+
         for i in lib.imports.iter() {
+            debug!("Require lib");
             let m = self.loaded_mods.find_copy(&**i);
 
             let l = if m == None {
@@ -155,7 +156,7 @@ impl VM {
             }
 
             env = Some(nenv);
-        } 
+        }
 
         let nenv = lib.env;
         unsafe { (*nenv).next = env; }
@@ -228,12 +229,6 @@ impl VM {
                 let envsize = self.read_be_u64();
                 self.frame.alloc(self.gc, envsize);
             }
-
-            // bytecode::Delete => {
-                // TODO: implement env delete
-            // }
-
-            // stack to env primitives
 
             bytecode::Store => {
                 let addr = self.read_be_u64();
