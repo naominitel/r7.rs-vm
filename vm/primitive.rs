@@ -185,6 +185,17 @@ fn eq(argc: u8, vm: &mut VM) -> Value {
     }
 }
 
+fn equals(argc: u8, vm: &mut VM) -> Value {
+    if argc != 2 {
+        fail!("Wrong number of arguments");
+    }
+
+    let v1 = getarg(vm);
+    let v2 = getarg(vm);
+
+    Bool(v1.compare(&v2))
+}
+
 pub fn list(argc: u8, vm: &mut VM) -> Value {
     let mut ret = Null;
     let mut i = argc as uint;

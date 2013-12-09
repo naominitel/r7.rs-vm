@@ -73,3 +73,35 @@ pub fn setcdr(val: &mut Value, cdr: &Value) {
         _ => fail!("Attempting to setcar! on a non-pair value")
     }
 }
+
+impl Value {
+    // structural copareason
+    pub fn compare(&self, other: &Value) -> bool {
+        match (self, other) {
+            (&Pair(p1), &Pair(p2)) => {
+                p1.car().compare(&p2.car()) &&
+                    p1.cdr().compare(&p2.cdr())
+            }
+
+            (&Closure(cl1), &Closure(cl2)) => {
+                (*cl1) == (*cl2)
+            }
+
+            (&Primitive(p1), &Primitive(p2)) => {
+                use std::cast::transmute;
+                let p1: *() = unsafe { transmute(p1) };
+                let p2: *() = unsafe { transmute(p2) };
+                p1 == p2
+            }
+
+            (&Num(ref i), &Num(ref j)) => i == j,
+            (&Bool(b1), &Bool(b2)) => b1 == b2,
+            (&Symbol(h1), &Symbol(h2)) => h1 == h2,
+
+            (&Null, &Null) => true,
+            (&Unit, &Unit) => true,
+
+            _ => false
+        }
+    }
+}
