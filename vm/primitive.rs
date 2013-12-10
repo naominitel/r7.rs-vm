@@ -51,7 +51,9 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
             (true, Primitive(div)),
             (true, Primitive(cmp)),
             (true, Primitive(eq)),
+            (true, Primitive(equal)),
             (true, Primitive(list)),
+            (true, Primitive(map)),
             (true, Primitive(cons)),
             (true, Primitive(car)),
             (true, Primitive(cdr)),
@@ -185,7 +187,7 @@ fn eq(argc: u8, vm: &mut VM) -> Value {
     }
 }
 
-fn equals(argc: u8, vm: &mut VM) -> Value {
+fn equal(argc: u8, vm: &mut VM) -> Value {
     if argc != 2 {
         fail!("Wrong number of arguments");
     }
@@ -212,6 +214,54 @@ pub fn list(argc: u8, vm: &mut VM) -> Value {
 
     vm.stack.truncate(stlen - argc as uint);
     ret
+}
+
+pub fn map(argc: u8, vm: &mut VM) -> Value {
+    if argc != 2 {
+        fail!("Wrong number of arguments")
+    }
+
+    // allocate a dummy pair that will in fact point to the first
+    // true element of the list to allow fast insertions
+    let mut fst = gc::pair::GCPair {
+        car: Unit,
+        cdr: Null,
+        mark: false
+    };
+    let mut ptr = gc::Pair(&mut fst);
+
+    let fun = getarg(vm);
+    let mut lst = getarg(vm);
+
+    loop {
+        match lst {
+            Pair(p) => {
+                // function calls requires arguments to be placed
+                // on-stack before passing control to the function
+                vm.stack.push(p.car());
+                let ret = vm.fun_call_ret(&fun, 1);
+
+                // this one is GC'd
+                let pair  = vm.gc.alloc_pair();
+                pair.setcar(&ret);
+                pair.setcdr(&Null);
+
+                ptr.setcdr(&Pair(pair));
+                ptr = pair;
+
+                lst = p.cdr();
+            }
+
+            Null => break,
+
+            _ => {
+                fail!("Error: expected a pair");
+            }
+        }
+    }
+
+    // remove dummy node
+    fst.cdr.clone()
 }
 
 fn cons(argc: u8, vm: &mut VM) -> Value {
