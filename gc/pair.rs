@@ -4,6 +4,8 @@ use gc::visit::Visitor;
 
 // a garbage-collected Scheme pair
 
+#[packed]
+#[deriving(Clone)]
 pub struct GCPair {
     car: value::Value,
     cdr: value::Value,
@@ -19,12 +21,6 @@ impl collect::GCollect for GCPair {
         self.mark = m;
         self.car.visit(m);
         self.cdr.visit(m);
-    }
-}
-
-impl Drop for GCPair {
-    fn drop(&mut self) {
-        debug!("Dropping pair whose car is {:?}", self.car);
     }
 }
 

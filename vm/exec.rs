@@ -402,9 +402,13 @@ impl VM {
                 self.pop_frame();
             }
 
-            _ => {
-                fail!("Unkwown bytecode instruction {:u}", opcode as u8);
-            }
+            bytecode::Nop => (),
+
+            // FIXME: this pattern is not *really* exhaustive because of the
+            // unsafe u8 -> enum cast
+            // _ => {
+            //     fail!("Unkwown bytecode instruction {:u}", opcode as u8);
+            // }
         }
     }
 

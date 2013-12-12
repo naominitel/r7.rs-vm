@@ -9,6 +9,7 @@ use gc::value::Pair;
 use gc::value::Primitive;
 use gc::value::Symbol;
 use gc::value::Unit;
+use gc::value::list::LIST_BUILDER;
 use gmp::Mpz;
 use std::cast::transmute;
 use std::num::One;
@@ -221,17 +222,10 @@ pub fn map(argc: u8, vm: &mut VM) -> Value {
         fail!("Wrong number of arguments")
     }
 
-    // allocate a dummy pair that will in fact point to the first
-    // true element of the list to allow fast insertions
-    let mut fst = gc::pair::GCPair {
-        car: Unit,
-        cdr: Null,
-        mark: false
-    };
-    let mut ptr = gc::Pair(&mut fst);
-
     let fun = getarg(vm);
     let mut lst = getarg(vm);
+    let mut builder = LIST_BUILDER.clone();
+    builder.init();
 
     loop {
         match lst {
@@ -241,14 +235,7 @@ pub fn map(argc: u8, vm: &mut VM) -> Value {
                 vm.stack.push(p.car());
                 let ret = vm.fun_call_ret(&fun, 1);
 
-                // this one is GC'd
-                let pair  = vm.gc.alloc_pair();
-                pair.setcar(&ret);
-                pair.setcdr(&Null);
-
-                ptr.setcdr(&Pair(pair));
-                ptr = pair;
-
+                builder.append(&ret, vm.gc);
                 lst = p.cdr();
             }
 
@@ -260,8 +247,7 @@ pub fn map(argc: u8, vm: &mut VM) -> Value {
         }
     }
 
-    // remove dummy node
-    fst.cdr.clone()
+    builder.get_list()
 }
 
 fn cons(argc: u8, vm: &mut VM) -> Value {

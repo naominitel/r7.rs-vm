@@ -2,6 +2,67 @@ use gc;
 use vm;
 use gmp;
 
+pub mod list {
+    use gc;
+    use super::Null;
+    use super::Pair;
+    use super::Value;
+    use super::Unit;
+
+    // various functions for manipulating Scheme lists
+    pub fn is_list(value: &Value) -> bool {
+        match value {
+            &Pair(p) => is_list(&p.cdr()),
+            &Null => true,
+            _ => false
+        }
+    }
+
+    // utility struct for efficiently building lists iteratively
+
+    #[deriving(Clone)]
+    struct ListBuilder {
+        fst: gc::pair::GCPair,
+        ptr: gc::Pair,
+    }
+
+    pub static LIST_BUILDER: ListBuilder = ListBuilder {
+        // allocate a dummy pair that will in fact point to the first
+        // true element of the list to allow fast insertions
+        fst: gc::pair::GCPair {
+            car: Unit,
+            cdr: Null,
+            mark: false
+        },
+
+        ptr: gc::Pair(0 as *mut gc::pair::GCPair)
+    };
+
+    impl ListBuilder {
+        #[inline(always)]
+        pub fn init(&mut self) {
+            self.ptr = gc::Pair(&mut self.fst);
+        }
+
+        #[inline(always)]
+        pub fn append(&mut self, v: &Value, gc: &mut gc::GC) {
+            // this one is GC'd
+            let pair = gc.alloc_pair();
+            pair.setcar(v);
+            pair.setcdr(&Null);
+
+            self.ptr.setcdr(&Pair(pair));
+            self.ptr = pair;
+        }
+
+        #[inline(always)]
+        pub fn get_list(&self) -> Value {
+            // remove dummy node
+            self.fst.cdr.clone()
+        }
+    }
+}
+
 // Type for representing Scheme values manipulated by the VM
 // a Value can be either
 //   * a pair of two values (managed by the GC)
