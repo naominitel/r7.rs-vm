@@ -57,7 +57,7 @@ impl GCEnv {
 
         match self.next {
             Some(e) => unsafe {
-                (*e).store(value, addr - self.values.len() as u64)
+                (*e).store(value, addr - self.values.capacity() as u64)
             },
 
             None => fail!("Value not in environment")
@@ -81,7 +81,7 @@ impl GCEnv {
 
         else { match self.next {
             Some(e) => unsafe {
-                (*e).fetch(addr - self.values.len() as u64)
+                (*e).fetch(addr - self.values.capacity() as u64)
             },
 
             None => fail!("Value not in environment")
