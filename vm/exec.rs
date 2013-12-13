@@ -80,11 +80,13 @@ impl VM {
             sym_table: symtable, modules: mods }
     }
 
+    #[inline(always)]
     fn next_op(&mut self) -> Opcode {
         let opcode = self.read_u8();
         unsafe { ::std::cast::transmute(opcode) }
     }
 
+    #[inline(always)]
     fn next_ty(&mut self) -> Type {
         let ty = self.read_u8();
         unsafe { ::std::cast::transmute(ty) }
@@ -221,40 +223,51 @@ impl VM {
     }
 
     #[inline(always)]
+    pub fn closure_call(&mut self, cl: Closure, argc: u8) {
+        let env = self.get_args_env(argc, cl);
+        self.push_frame(cl.pc(), env);
+    }
+
+    #[inline(always)]
     pub fn fun_call(&mut self, fun: &value::Value, argc: u8) {
         match fun {
-            &value::Closure(cl) => {
-                let env = self.get_args_env(argc, cl);
-                self.push_frame(cl.pc(), env);
-            }
-
+            &value::Closure(cl) => self.closure_call(cl, argc),
             &value::Primitive(prim) => {
                 let ret = prim(argc, self);
                 self.stack.push(ret);
             }
-
             _ => fail!("Attempting to call a non-function value")
         }
     }
 
+    #[inline(always)]
     pub fn fun_call_ret(&mut self, fun: &value::Value, argc: u8) -> value::Value {
-        fn get_cur_frame(v: &mut VM) -> *Frame {
-            let f: &Frame = v.frame; f as *Frame
+        match fun {
+            &value::Primitive(prim) => prim(argc, self),
+
+            &value::Closure(cl) => {
+                #[inline(always)]
+                fn get_cur_frame(v: &mut VM) -> *Frame {
+                    let f: &Frame = v.frame; f as *Frame
+                }
+
+                let caller: *Frame = get_cur_frame(self);
+                self.closure_call(cl, argc);
+                let mut cur_frame = get_cur_frame(self);
+
+                // exec until frame returns
+                // FIXME: I don't know how this is going to behave
+                // when we will have continuation...
+                while cur_frame != caller {
+                    self.exec_instr();
+                    cur_frame = get_cur_frame(self);
+                }
+
+                self.stack.pop()
+            }
+
+            _ => fail!("Attempting to call a non-function value")
         }
-
-        let caller: *Frame = get_cur_frame(self);
-        self.fun_call(fun, argc);
-        let mut cur_frame = get_cur_frame(self);
-
-        // exec until frame returns
-        // FIXME: I don't know how this is going to behave
-        // when we will have continuation...
-        while cur_frame != caller {
-            self.exec_instr();
-            cur_frame = get_cur_frame(self);
-        }
-
-        self.stack.pop()
     }
 
     fn exec_instr(&mut self) {
