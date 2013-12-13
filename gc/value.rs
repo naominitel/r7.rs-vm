@@ -106,8 +106,8 @@ impl ToStr for Value {
             &Bool(false) => ~"#f",
             &Closure(_) => ~"#<procedure>",
             &Null => ~"'()",
-            &Num(ref i) => format!("{:s}", i.to_str()),
-            &Pair(p) => p.to_str(),
+            &Num(ref i) => i.to_str(),
+            &Pair(p) => format!("({:s})", p.to_str()),
             &Primitive(_) => ~"#<procedure>",
             &Symbol(h) => format!("'{:s}", h.to_str()),
             &Unit => ~""
