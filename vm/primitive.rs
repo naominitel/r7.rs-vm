@@ -55,6 +55,7 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
             (true, Primitive(equal)),
             (true, Primitive(list)),
             (true, Primitive(map)),
+            (true, Primitive(filter)),
             (true, Primitive(cons)),
             (true, Primitive(car)),
             (true, Primitive(cdr)),
@@ -236,6 +237,41 @@ pub fn map(argc: u8, vm: &mut VM) -> Value {
                 let ret = vm.fun_call_ret(&fun, 1);
 
                 builder.append(&ret, vm.gc);
+                lst = p.cdr();
+            }
+
+            Null => break,
+
+            _ => {
+                fail!("Error: expected a pair");
+            }
+        }
+    }
+
+    builder.get_list()
+}
+
+pub fn filter(argc: u8, vm: &mut VM) -> Value {
+    if argc != 2 {
+        fail!("Wrong number of arguments")
+    }
+
+    let fun = getarg(vm);
+    let mut lst = getarg(vm);
+    let mut builder = LIST_BUILDER.clone();
+    builder.init();
+
+    loop {
+        match lst {
+            Pair(p) => {
+                vm.stack.push(p.car());
+                let ret = vm.fun_call_ret(&fun, 1);
+
+                match ret {
+                    Bool(false) => (),
+                    _ => builder.append(&p.car(), vm.gc),
+                }
+
                 lst = p.cdr();
             }
 
