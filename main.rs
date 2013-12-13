@@ -1,4 +1,4 @@
-#[link(name = "scmrun", vers = "0.1")];
+#[pkgid = "scmrun#0.1"];
 #[deny(unnecessary_qualification)];
 #[deny(non_camel_case_types)];
 #[deny(non_uppercase_statics)];
