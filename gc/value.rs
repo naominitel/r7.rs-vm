@@ -20,11 +20,15 @@ pub mod list {
     }
 
     pub fn is_list(value: &Value) -> bool {
-        match value {
-            &Pair(p) => is_list(&p.cdr()),
-            &Null => true,
-            _ => false
-        }
+        let mut ret = true;
+
+        invalid_list::cond.trap(|_| {
+            // non-pair value
+            ret = false;
+            None
+        }).inside(|| { for _ in iter(value) { } });
+
+        ret
     }
 
     // utility struct for efficiently building lists iteratively
@@ -68,6 +72,14 @@ pub mod list {
         }
     }
 
+    // struct for iterator over Scheme linked lists
+    // iterates until it reaches a Null. If a non-pair or non-null value is
+    // encountered, it raises the invalid_list condition
+
+    condition! {
+        pub invalid_list: ::gc::Value -> Option<::gc::Value>;
+    }
+
     struct ListIterator<'a> {
         cur: &'a Value
     }
@@ -82,7 +94,7 @@ pub mod list {
                     Some(ret)
                 }
 
-                _ => fail!("Not a list")
+                _ => invalid_list::cond.raise(self.cur.clone())
             }
         }
     }

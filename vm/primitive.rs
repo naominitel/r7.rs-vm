@@ -51,6 +51,7 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
             (true, Primitive(eq)),
             (true, Primitive(equal)),
             (true, Primitive(list)),
+            (true, Primitive(is_list)),
             (true, Primitive(map)),
             (true, Primitive(filter)),
             (true, Primitive(cons)),
@@ -189,6 +190,14 @@ pub fn list(argc: u8, vm: &mut VM) -> Value {
 
     vm.stack.truncate(stlen - argc as uint);
     ret
+}
+
+pub fn is_list(argc: u8, vm: &mut VM) -> Value {
+    if argc != 1 {
+        fail!("Wrong number of arguments")
+    }
+
+    Bool(list::is_list(&getarg(vm)))
 }
 
 pub fn map(argc: u8, vm: &mut VM) -> Value {
