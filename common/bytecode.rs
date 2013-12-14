@@ -1,4 +1,5 @@
 #[repr(u8)]
+#[allow(dead_code)]
 pub enum Opcode {
     Nop    = 0x00,
     Push   = 0x01,
@@ -14,6 +15,7 @@ pub enum Opcode {
 }
 
 #[repr(u8)]
+#[allow(dead_code)]
 pub enum Type {
     Unit    = 0x00,
     Bool    = 0x01,

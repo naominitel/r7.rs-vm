@@ -121,28 +121,8 @@ impl ToStr for Value {
     }
 }
 
-pub fn setcar(val: &mut Value, car: &Value) {
-    match val {
-        &Pair(p) => {
-            p.setcar(car);
-        }
-
-        _ => fail!("Attempting to setcar! on a non-pair value")
-    }
-}
-
-pub fn setcdr(val: &mut Value, cdr: &Value) {
-    match val {
-        &Pair(p) => {
-            p.setcdr(cdr);
-        }
-
-        _ => fail!("Attempting to setcar! on a non-pair value")
-    }
-}
-
 impl Value {
-    // structural copareason
+    // structural compareason
     pub fn compare(&self, other: &Value) -> bool {
         match (self, other) {
             (&Pair(p1), &Pair(p2)) => {

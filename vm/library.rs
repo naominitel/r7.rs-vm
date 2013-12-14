@@ -37,16 +37,6 @@ impl IterBytes for LibName {
 //    }
 // }
 
-priv struct LibHeader {
-    magic:          [u8, .. 3],
-    version:        u8,
-    reserved:       [u8, .. 28],
-    sym_tab_off:    u64,
-    imports_off:    u64,
-    exports_off:    u64,
-    text_off:       u64
-}
-
 struct Library {
     name: ~LibName,
     prog: ~[u8],

@@ -335,7 +335,7 @@ fn setcar(argc: u8, vm: &mut VM) -> Value {
 
     match getarg(vm) {
         Pair(p) => p.setcar(&getarg(vm)),
-        _ => fail!("Bad arguments")
+        _ => fail!("Attempting to setcar! on a non-pair value")
     }
 
     Unit
@@ -348,7 +348,7 @@ fn setcdr(argc: u8, vm: &mut VM) -> Value {
 
     match getarg(vm) {
         Pair(p) => p.setcdr(&getarg(vm)),
-        _ => fail!("Bad arguments")
+        _ => fail!("Attempting to setcdr! on a non-pair value")
     }
 
     Unit
