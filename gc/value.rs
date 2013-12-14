@@ -121,6 +121,39 @@ impl ToStr for Value {
     }
 }
 
+impl Eq for Value {
+    // physical compareason
+    fn eq(&self, v: &Value) -> bool {
+        use std::cast::transmute;
+
+        match (self, v) {
+            (&Pair(p1), &Pair(p2)) => {
+                // eq do object-compareason
+                (*p1) == (*p2)
+            }
+
+            (&Closure(cl1), &Closure(cl2)) => {
+                (*cl1) == (*cl2)
+            }
+
+            (&Primitive(p1), &Primitive(p2)) => {
+                let p1: *() = unsafe { transmute(p1) };
+                let p2: *() = unsafe { transmute(p2) };
+                p1 == p2
+            }
+
+            (&Num(ref i), &Num(ref j)) => i == j,
+            (&Bool(b1), &Bool(b2)) => b1 == b2,
+            (&Symbol(h1), &Symbol(h2)) => h1 == h2,
+
+            (&Null, &Null) => true,
+            (&Unit, &Unit) => true,
+
+            _ => false
+        }
+    }
+}
+
 impl Value {
     // structural compareason
     pub fn compare(&self, other: &Value) -> bool {

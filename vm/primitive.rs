@@ -2,16 +2,13 @@ use gc;
 use gc::Env;
 use gc::Value;
 use gc::value::Bool;
-use gc::value::Closure;
 use gc::value::Null;
 use gc::value::Num;
 use gc::value::Pair;
 use gc::value::Primitive;
-use gc::value::Symbol;
 use gc::value::Unit;
 use gc::value::list;
 use gmp::Mpz;
-use std::cast::transmute;
 use std::num::One;
 use std::num::Zero;
 use vm::VM;
@@ -162,31 +159,7 @@ fn eq(argc: u8, vm: &mut VM) -> Value {
     let v1 = getarg(vm);
     let v2 = getarg(vm);
 
-    match (v1, v2) {
-        (Pair(p1), Pair(p2)) => {
-            // eq do object-compareason
-            Bool((*p1) == (*p2))
-        }
-
-        (Closure(cl1), Closure(cl2)) => {
-            Bool((*cl1) == (*cl2))
-        }
-
-        (Primitive(p1), Primitive(p2)) => {
-            let p1: *() = unsafe { transmute(p1) };
-            let p2: *() = unsafe { transmute(p2) };
-            Bool(p1 == p2)
-        }
-
-        (Num(i), Num(j)) => Bool(i == j),
-        (Bool(b1), Bool(b2)) => Bool(b1 == b2),
-        (Symbol(h1), Symbol(h2)) => Bool(h1 == h2),
-
-        (Null, Null) => Bool(true),
-        (Unit, Unit) => Bool(true),
-
-        _ => Bool(false)
-    }
+    Bool(v1 == v2)
 }
 
 fn equal(argc: u8, vm: &mut VM) -> Value {
