@@ -57,6 +57,10 @@ impl Pair {
         unsafe { (**self).cdr.clone() }
     }
 
+    pub fn cdr_ref<'a>(&'a self) -> &'a value::Value {
+        unsafe { &(***self).cdr }
+    }
+
     pub fn setcar(self, car: &value::Value) {
         unsafe { (**self).car = car.clone(); }
     }

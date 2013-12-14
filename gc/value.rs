@@ -67,6 +67,29 @@ pub mod list {
             self.fst.cdr.clone()
         }
     }
+
+    struct ListIterator<'a> {
+        cur: &'a Value
+    }
+
+    impl<'a> Iterator<Value> for ListIterator<'a> {
+        fn next(&mut self) -> Option<Value> {
+            match self.cur {
+                &Null => None,
+                &Pair(ref p) => {
+                    let ret = p.car();
+                    self.cur = p.cdr_ref();
+                    Some(ret)
+                }
+
+                _ => fail!("Not a list")
+            }
+        }
+    }
+
+    pub fn iter<'a>(v: &'a Value) -> ListIterator<'a> {
+        ListIterator { cur: v }
+    }
 }
 
 // Type for representing Scheme values manipulated by the VM
