@@ -9,7 +9,7 @@ use gc::value::Pair;
 use gc::value::Primitive;
 use gc::value::Symbol;
 use gc::value::Unit;
-use gc::value::list::LIST_BUILDER;
+use gc::value::list;
 use gmp::Mpz;
 use std::cast::transmute;
 use std::num::One;
@@ -225,7 +225,7 @@ pub fn map(argc: u8, vm: &mut VM) -> Value {
 
     let fun = getarg(vm);
     let mut lst = getarg(vm);
-    let mut builder = LIST_BUILDER.clone();
+    let mut builder = list::LIST_BUILDER.clone();
     builder.init();
 
     loop {
@@ -258,7 +258,7 @@ pub fn filter(argc: u8, vm: &mut VM) -> Value {
 
     let fun = getarg(vm);
     let mut lst = getarg(vm);
-    let mut builder = LIST_BUILDER.clone();
+    let mut builder = list::LIST_BUILDER.clone();
     builder.init();
 
     loop {
@@ -293,11 +293,7 @@ fn cons(argc: u8, vm: &mut VM) -> Value {
 
     let v1 = getarg(vm);
     let v2 = getarg(vm);
-    let p = vm.gc.alloc_pair();
-
-    p.setcar(&v1);
-    p.setcdr(&v2);
-    Pair(p)
+    Pair(list::cons(&v1, &v2, vm.gc))
 }
 
 fn car(argc: u8, vm: &mut VM) -> Value {

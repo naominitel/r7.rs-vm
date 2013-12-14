@@ -9,7 +9,16 @@ pub mod list {
     use super::Value;
     use super::Unit;
 
-    // various functions for manipulating Scheme lists
+    // various functions for manipulating Scheme lists and pairs
+
+    pub fn cons(car: &Value, cdr: &Value, gc: &mut gc::GC) -> gc::Pair {
+        let p = gc.alloc_pair();
+
+        p.setcar(car);
+        p.setcdr(cdr);
+        p
+    }
+
     pub fn is_list(value: &Value) -> bool {
         match value {
             &Pair(p) => is_list(&p.cdr()),
@@ -47,10 +56,7 @@ pub mod list {
         #[inline(always)]
         pub fn append(&mut self, v: &Value, gc: &mut gc::GC) {
             // this one is GC'd
-            let pair = gc.alloc_pair();
-            pair.setcar(v);
-            pair.setcdr(&Null);
-
+            let pair = cons(v, &Null, gc);
             self.ptr.setcdr(&Pair(pair));
             self.ptr = pair;
         }
