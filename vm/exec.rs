@@ -195,13 +195,19 @@ impl VM {
 
             let env = self.gc.alloc_env((arity + 1) as u64, Some(cl.env()));
 
-            for _ in range(0, arity) {
-                let arg = self.stack.pop();
+            let va_count = argc - arity;
+            let va_args = self.prim_call(primitive::list, va_count);
+
+            let base = self.stack.len() - arity as uint;
+
+            for i in range(0, arity) {
+                let arg = self.stack[base + i as uint].clone();
                 unsafe { (*env).values.push((true, arg)); }
             }
 
-            let va_count = argc - arity;
-            let va_args = primitive::list(va_count, self);
+            // remove arguments from the stack
+            self.stack.truncate(base);
+
             unsafe { (*env).values.push((true, va_args)); }
             env
         }
@@ -212,20 +218,32 @@ impl VM {
             }
 
             let env = self.gc.alloc_env(argc as u64, Some(cl.env()));
+            let base = self.stack.len() - argc as uint;
 
-            for _ in range(0, argc) {
-                let arg = self.stack.pop();
+            for i in range(0, argc) {
+                let arg = self.stack[base + i as uint].clone();
                 unsafe { (*env).values.push((true, arg)); }
             }
+
+            // remove arguments from the stack
+            self.stack.truncate(base);
 
             env
         }
     }
 
     #[inline(always)]
-    pub fn closure_call(&mut self, cl: Closure, argc: u8) {
+    fn closure_call(&mut self, cl: Closure, argc: u8) {
         let env = self.get_args_env(argc, cl);
         self.push_frame(cl.pc(), env);
+    }
+
+    #[inline(always)]
+    fn prim_call(&mut self, prim: primitive::Prim, argc: u8) -> value::Value {
+        let ret = prim(primitive::Arguments::new(self, argc));
+        let len = self.stack.len() - argc as uint;
+        self.stack.truncate(len);
+        ret
     }
 
     #[inline(always)]
@@ -233,7 +251,7 @@ impl VM {
         match fun {
             &value::Closure(cl) => self.closure_call(cl, argc),
             &value::Primitive(prim) => {
-                let ret = prim(argc, self);
+                let ret = self.prim_call(prim, argc);
                 self.stack.push(ret);
             }
             _ => fail!("Attempting to call a non-function value")
@@ -243,7 +261,7 @@ impl VM {
     #[inline(always)]
     pub fn fun_call_ret(&mut self, fun: &value::Value, argc: u8) -> value::Value {
         match fun {
-            &value::Primitive(prim) => prim(argc, self),
+            &value::Primitive(prim) => self.prim_call(prim, argc),
 
             &value::Closure(cl) => {
                 #[inline(always)]
@@ -375,7 +393,7 @@ impl VM {
                     // a closure and a primitive, so a tail-call to a primitive
                     // may happen here
                     value::Primitive(prim) => {
-                        let ret = prim(argc, self);
+                        let ret = self.prim_call(prim, argc);
                         self.stack.push(ret);
                     }
 

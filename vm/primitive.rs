@@ -13,7 +13,7 @@ use std::num::One;
 use std::num::Zero;
 use vm::VM;
 
-pub type Prim = fn(argc: u8, &mut VM) -> Value;
+pub type Prim = fn(argv: Arguments) -> Value;
 
 /*
 static env: &'static GCEnv = &GCEnv {
@@ -68,18 +68,49 @@ pub fn primEnv(gc: &mut gc::GC) -> Env {
     env
 }
 
-#[inline(always)]
-fn getarg(vm: &mut VM) -> Value {
-    vm.stack.pop()
+pub struct Arguments<'a> {
+    priv vm: &'a mut VM,
+    priv argc: u8
+}
+
+impl<'a> Arguments<'a> {
+    #[inline(always)]
+    pub fn new(vm: &'a mut VM, argc: u8) -> Arguments<'a> {
+        Arguments { vm: vm, argc: argc }
+    }
+
+    #[inline(always)]
+    fn len(&self) -> u8 {
+        self.argc
+    }
+
+    #[inline(always)]
+    fn vec(&'a self) -> &'a [Value] {
+        self.vm.stack.slice_from(self.vm.stack.len() - self.argc as uint)
+    }
+
+    #[inline(always)]
+    fn vm(&'a self) -> &'a mut VM {
+        &'a mut *self.vm
+    }
+}
+
+impl<'a> Index<u8, Value> for Arguments<'a> {
+    #[inline(always)]
+    fn index(&self, index: &u8) -> Value {
+        // first arguments are at the top of the stack
+        let idx = self.vm.stack.len() - self.argc as uint + *index as uint;
+        self.vm.stack[idx].clone()
+    }
 }
 
 // default primitives
 
-fn add(argc: u8, vm: &mut VM) -> Value {
+fn add(argv: Arguments) -> Value {
     let mut res: Mpz = Zero::zero();
 
-    for _ in range(0, argc) {
-        match getarg(vm) {
+    for i in range(0, argv.len()) {
+        match argv[i] {
             Num(n) => res = res.add(&n),
             _ => fail!("Value is not a number")
         }
@@ -88,19 +119,19 @@ fn add(argc: u8, vm: &mut VM) -> Value {
     Num(res)
 }
 
-fn min(argc: u8, vm: &mut VM) -> Value {
-    if argc == 0 {
+fn min(argv: Arguments) -> Value {
+    if argv.len() == 0 {
         fail!("No arguments")
     }
 
-    match getarg(vm) {
-        Num(ref i) if argc == 1 => Num(-i),
-        Num(i) => {
-            let mut res = i;
+    match argv.vec() {
+        [Num(ref i)] => Num(-i),
+        [Num(ref i), .. r] => {
+            let mut res = i.clone();
 
-            for _ in range(0, argc - 1) {
-                match getarg(vm) {
-                    Num(n) => res = res.sub(&n),
+            for i in r.iter() {
+                match i {
+                    &Num(ref n) => res = res.sub(n),
                     _ => fail!("Value is not a number")
                 }
             }
@@ -112,11 +143,11 @@ fn min(argc: u8, vm: &mut VM) -> Value {
     }
 }
 
-fn mul(argc: u8, vm: &mut VM) -> Value {
+fn mul(argv: Arguments) -> Value {
     let mut res: Mpz = One::one();
 
-    for _ in range(0, argc) {
-        match getarg(vm) {
+    for i in range(0, argv.len()) {
+        match argv[i] {
             Num(n) => res = res.mul(&n),
             _ => fail!("Value is not a number")
         }
@@ -125,22 +156,18 @@ fn mul(argc: u8, vm: &mut VM) -> Value {
     Num(res)
 }
 
-fn div(_: u8, _: &mut VM) -> Value {
+fn div(_: Arguments) -> Value {
     // requires exact numbers implementation
     fail!("Unimplemented")
 }
 
-fn cmp(argc: u8, vm: &mut VM) -> Value {
-    if argc < 2 {
-        fail!("Wrong number of arguments")
-    }
-
-    match getarg(vm) {
-        Num(v) => {
-            for _ in range(0, argc - 1) {
-                match getarg(vm) {
-                    Num(ref v2) if *v2 == v => (),
-                    Num(_) => return Bool(false),
+fn cmp(argv: Arguments) -> Value {
+    match argv.vec() {
+        [Num(ref v), .. r] => {
+            for i in r.iter() {
+                match i {
+                    &Num(ref v2) if *v2 == *v => (),
+                    &Num(_) => return Bool(false),
                     _ => fail!("Bad argument")
                 }
             }
@@ -152,202 +179,155 @@ fn cmp(argc: u8, vm: &mut VM) -> Value {
     }
 }
 
-fn eq(argc: u8, vm: &mut VM) -> Value {
-    if argc != 2 {
-        fail!("Wrong number of arguments");
+fn eq(argv: Arguments) -> Value {
+    match argv.vec() {
+        [ref v1, ref v2] => Bool(v1 == v2),
+        _ => fail!("Wrong number of arguments")
     }
-
-    let v1 = getarg(vm);
-    let v2 = getarg(vm);
-
-    Bool(v1 == v2)
 }
 
-fn equal(argc: u8, vm: &mut VM) -> Value {
-    if argc != 2 {
-        fail!("Wrong number of arguments");
+fn equal(argv: Arguments) -> Value {
+    match argv.vec() {
+        [ref v1, ref v2] => Bool(v1.compare(v2)),
+        _ => fail!("Wrong number of arguments")
     }
-
-    let v1 = getarg(vm);
-    let v2 = getarg(vm);
-
-    Bool(v1.compare(&v2))
 }
 
-pub fn list(argc: u8, vm: &mut VM) -> Value {
+pub fn list(argv: Arguments) -> Value {
     let mut ret = Null;
-    let mut i = argc as uint;
-    let stlen = vm.stack.len();
+    let mut i = argv.len() as int - 1;
 
-    while i > 0 {
-        let v = vm.stack[stlen - i].clone();
-        let pair = vm.gc.alloc_pair();
+    while i >= 0 {
+        let v = argv[i as u8].clone();
+        let pair = argv.vm().gc.alloc_pair();
         pair.setcar(&v);
         pair.setcdr(&ret);
         ret = Pair(pair);
-        i = i - 1;
+        i -= 1
     }
 
-    vm.stack.truncate(stlen - argc as uint);
     ret
 }
 
-pub fn is_list(argc: u8, vm: &mut VM) -> Value {
-    if argc != 1 {
-        fail!("Wrong number of arguments")
+pub fn is_list(argv: Arguments) -> Value {
+    match argv.vec() {
+        [ref v] => Bool(list::is_list(v)),
+        _ => fail!("Wrong number of arguments")
     }
 
-    Bool(list::is_list(&getarg(vm)))
 }
 
-pub fn map(argc: u8, vm: &mut VM) -> Value {
-    if argc != 2 {
-        fail!("Wrong number of arguments")
-    }
+pub fn map(argv: Arguments) -> Value {
+    match argv.vec() {
+        [ref fun, ref lst] => {
+            let vm = argv.vm();
+            let mut builder = list::LIST_BUILDER.clone();
+            builder.init();
 
-    let fun = getarg(vm);
-    let mut lst = getarg(vm);
-    let mut builder = list::LIST_BUILDER.clone();
-    builder.init();
-
-    loop {
-        match lst {
-            Pair(p) => {
-                // function calls requires arguments to be placed
-                // on-stack before passing control to the function
-                vm.stack.push(p.car());
-                let ret = vm.fun_call_ret(&fun, 1);
-
-                builder.append(&ret, vm.gc);
-                lst = p.cdr();
-            }
-
-            Null => break,
-
-            _ => {
+            list::invalid_list::cond.trap(|_| {
                 fail!("Error: expected a pair");
-            }
-        }
-    }
-
-    builder.get_list()
-}
-
-pub fn filter(argc: u8, vm: &mut VM) -> Value {
-    if argc != 2 {
-        fail!("Wrong number of arguments")
-    }
-
-    let fun = getarg(vm);
-    let mut lst = getarg(vm);
-    let mut builder = list::LIST_BUILDER.clone();
-    builder.init();
-
-    loop {
-        match lst {
-            Pair(p) => {
-                vm.stack.push(p.car());
-                let ret = vm.fun_call_ret(&fun, 1);
-
-                match ret {
-                    Bool(false) => (),
-                    _ => builder.append(&p.car(), vm.gc),
+            }).inside(|| {
+                for v in list::iter(lst) {
+                    // function calls requires arguments to be placed
+                    // on-stack before passing control to the function
+                    vm.stack.push(v);
+                    let ret = vm.fun_call_ret(fun, 1);
+                    builder.append(&ret, argv.vm().gc);
                 }
+            });
 
-                lst = p.cdr();
-            }
-
-            Null => break,
-
-            _ => {
-                fail!("Error: expected a pair");
-            }
+            builder.get_list()
         }
-    }
 
-    builder.get_list()
+        _ => fail!("Wrong number of arguments")
+    }
 }
 
-fn cons(argc: u8, vm: &mut VM) -> Value {
-    if argc != 2 {
-        fail!("Wrong number of arguments")
-    }
+pub fn filter(argv: Arguments) -> Value {
+    match argv.vec() {
+        [ref fun, ref lst] => {
+            let vm = argv.vm();
+            let mut builder = list::LIST_BUILDER.clone();
+            builder.init();
 
-    let v1 = getarg(vm);
-    let v2 = getarg(vm);
-    Pair(list::cons(&v1, &v2, vm.gc))
+            list::invalid_list::cond.trap(|_| {
+                fail!("Error: expected a pair");
+            }).inside(|| {
+                for v in list::iter(lst) {
+                    vm.stack.push(v.clone());
+                    let ret = vm.fun_call_ret(fun, 1);
+
+                    match ret {
+                        Bool(false) => (),
+                        _ => builder.append(&v, argv.vm().gc),
+                    }
+                }
+            });
+
+            builder.get_list()
+        }
+
+        _ => fail!("Wrong number of arguments")
+    }
 }
 
-fn car(argc: u8, vm: &mut VM) -> Value {
-    if argc != 1 {
-        fail!("Bad arguments")
+fn cons(argv: Arguments) -> Value {
+    match argv.vec() {
+        [ref v1, ref v2] => Pair (list::cons(v1, v2, argv.vm().gc)),
+        _ => fail!("Wrong number of arguments")
     }
+}
 
-    match getarg(vm) {
-        Pair(p) => p.car(),
+fn car(argv: Arguments) -> Value {
+    match argv.vec() {
+        [Pair(p)] => p.car(),
         _ => fail!("Bad argument")
     }
 }
 
-fn cdr(argc: u8, vm: &mut VM) -> Value {
-    if argc != 1 {
-        fail!("Bad arguments")
-    }
-
-    match getarg(vm) {
-        Pair(p) => p.cdr(),
+fn cdr(argv: Arguments) -> Value {
+    match argv.vec() {
+        [Pair(p)] => p.cdr(),
         _ => fail!("Bad arguments")
     }
 }
 
-fn display(_: u8, vm: &mut VM) -> Value {
-    print!("{:s}", getarg(vm).to_str());
+fn display(argv: Arguments) -> Value {
+    print!("{:s}", argv[0].to_str());
     Unit
 }
 
-fn newline(_: u8, _: &mut VM) -> Value {
+fn newline(_: Arguments) -> Value {
     print("\n");
     Unit
 }
 
-fn setcar(argc: u8, vm: &mut VM) -> Value {
-    if argc != 2 {
-        fail!("Wrong number of arguments")
-    }
-
-    match getarg(vm) {
-        Pair(p) => p.setcar(&getarg(vm)),
+fn setcar(argv: Arguments) -> Value {
+    match argv.vec() {
+        [Pair(p), ref v] => p.setcar(v),
         _ => fail!("Attempting to setcar! on a non-pair value")
     }
 
     Unit
 }
 
-fn setcdr(argc: u8, vm: &mut VM) -> Value {
-    if argc != 2 {
-        fail!("Wrong number of arguments")
-    }
-
-    match getarg(vm) {
-        Pair(p) => p.setcdr(&getarg(vm)),
+fn setcdr(argv: Arguments) -> Value {
+    match argv.vec() {
+        [Pair(p), ref v] => p.setcdr(v),
         _ => fail!("Attempting to setcdr! on a non-pair value")
     }
 
     Unit
 }
 
-fn exit(_: u8, _: &mut VM) -> Value {
+fn exit(_: Arguments) -> Value {
     // FIXME: handle exit value
     fail!()
 }
 
-fn assert(argc: u8, vm: &mut VM) -> Value {
-    if argc != 1 {
-        fail!("Wrong number of arguments")
-    }
-
-    match getarg(vm) {
-        Bool(true) => Unit,
+fn assert(argv: Arguments) -> Value {
+    match argv.vec() {
+        [Bool(true)] => Unit,
         _ => fail!("Assertion failed")
     }
 }
