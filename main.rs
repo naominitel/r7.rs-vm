@@ -7,6 +7,7 @@ extern mod gmp;
 
 mod common;
 mod gc;
+mod primitives;
 mod vm;
 
 fn main() {

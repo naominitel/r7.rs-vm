@@ -7,14 +7,13 @@ use gc::Closure;
 use gc::Env;
 use gc::GC;
 use gc::value;
+use primitives;
 use std::hashmap::HashMap;
 use std::io::Reader;
 use std::num::FromPrimitive;
 use vm::Frame;
 use vm::Library;
 use vm::library::LibName;
-use vm::primitive::primEnv;
-use vm::primitive;
 use vm::Stack;
 use vm::symbols::SymTable;
 
@@ -70,7 +69,7 @@ impl VM {
         let stack = ~[];
 
         let mut gc = GC::new();
-        let env = primEnv(gc);
+        let env = primitives::env(gc);
         let frame = Frame::new(env, 0, 0);
         let loaded_mods = HashMap::new();
         let symtable = SymTable::new();
@@ -130,7 +129,7 @@ impl VM {
     }
 
     fn load_module(&mut self, lib: ~Library) {
-        let mut env = Some(primEnv(self.gc));
+        let mut env = Some(primitives::env(self.gc));
 
         for i in lib.imports.iter() {
             debug!("Require lib");
@@ -196,7 +195,7 @@ impl VM {
             let env = self.gc.alloc_env((arity + 1) as u64, Some(cl.env()));
 
             let va_count = argc - arity;
-            let va_args = self.prim_call(primitive::list, va_count);
+            let va_args = self.prim_call(primitives::list, va_count);
 
             let base = self.stack.len() - arity as uint;
 
@@ -239,8 +238,8 @@ impl VM {
     }
 
     #[inline(always)]
-    fn prim_call(&mut self, prim: primitive::Prim, argc: u8) -> value::Value {
-        let ret = prim(primitive::Arguments::new(self, argc));
+    fn prim_call(&mut self, prim: primitives::Prim, argc: u8) -> value::Value {
+        let ret = prim(primitives::Arguments::new(self, argc));
         let len = self.stack.len() - argc as uint;
         self.stack.truncate(len);
         ret

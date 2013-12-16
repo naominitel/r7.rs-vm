@@ -1,6 +1,7 @@
 use gc;
-use vm;
 use gmp;
+use primitives;
+use vm;
 
 pub mod list {
     use gc;
@@ -120,7 +121,7 @@ pub enum Value {
     Null,
     Num(gmp::Mpz),
     Pair(gc::Pair),
-    Primitive(vm::Prim),
+    Primitive(primitives::Prim),
     Symbol(vm::Handle),
     Unit
 }
