@@ -1,6 +1,8 @@
 use gc;
 use vm;
 
+// public primitives
+
 pub use self::list::list;
 
 mod arith;
@@ -9,6 +11,7 @@ mod control;
 mod display;
 mod list;
 mod pair;
+mod types;
 
 pub type Prim = fn(argv: Arguments) -> gc::Value;
 
@@ -52,6 +55,14 @@ pub fn env(gc: &mut gc::GC) -> gc::Env {
             (true, Primitive(boolean::cmp)),
             (true, Primitive(boolean::eq)),
             (true, Primitive(boolean::equal)),
+
+            /* type predicates */
+            (true, Primitive(types::boolean)),
+            (true, Primitive(types::null)),
+            (true, Primitive(types::pair)),
+            (true, Primitive(types::procedure)),
+            (true, Primitive(types::symbol)),
+            (true, Primitive(types::number)),
 
             /* pair utils */
             (true, Primitive(pair::cons)),
