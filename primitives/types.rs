@@ -34,7 +34,7 @@ pub fn pair(argv: Arguments) -> Value {
 
 pub fn procedure(argv: Arguments) -> Value {
     match argv.vec() {
-        [Closure(_)] | [Primitive(_)] => Bool(true),
+        [Closure(_)] | [Primitive(_, _)] => Bool(true),
         [_] => Bool(false),
         _ => fail!("Bad arguments")
     }

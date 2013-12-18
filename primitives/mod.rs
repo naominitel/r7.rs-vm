@@ -46,44 +46,44 @@ pub fn env(gc: &mut gc::GC) -> gc::Env {
     unsafe {
         (*env).values = ~[
             /* arith primitives */
-            (true, Primitive(arith::add)),
-            (true, Primitive(arith::min)),
-            (true, Primitive(arith::mul)),
-            (true, Primitive(arith::div)),
+            (true, Primitive(arith::add, "+")),
+            (true, Primitive(arith::min, "-")),
+            (true, Primitive(arith::mul, "*")),
+            (true, Primitive(arith::div, "/")),
 
             /* boolean primitives */
-            (true, Primitive(boolean::cmp)),
-            (true, Primitive(boolean::eq)),
-            (true, Primitive(boolean::equal)),
+            (true, Primitive(boolean::cmp, "=")),
+            (true, Primitive(boolean::eq, "eq?")),
+            (true, Primitive(boolean::equal, "equal?")),
 
             /* type predicates */
-            (true, Primitive(types::boolean)),
-            (true, Primitive(types::null)),
-            (true, Primitive(types::pair)),
-            (true, Primitive(types::procedure)),
-            (true, Primitive(types::symbol)),
-            (true, Primitive(types::number)),
+            (true, Primitive(types::boolean, "boolean?" )),
+            (true, Primitive(types::null, "null?")),
+            (true, Primitive(types::pair, "pair?")),
+            (true, Primitive(types::procedure, "procedure?")),
+            (true, Primitive(types::symbol, "symbol?")),
+            (true, Primitive(types::number, "number?")),
 
             /* pair utils */
-            (true, Primitive(pair::cons)),
-            (true, Primitive(pair::car)),
-            (true, Primitive(pair::cdr)),
-            (true, Primitive(pair::setcar)),
-            (true, Primitive(pair::setcdr)),
+            (true, Primitive(pair::cons, "cons")),
+            (true, Primitive(pair::car, "car")),
+            (true, Primitive(pair::cdr, "cdr")),
+            (true, Primitive(pair::setcar, "set-car!")),
+            (true, Primitive(pair::setcdr, "set-cdr!")),
 
             /* list utils */
-            (true, Primitive(list)),
-            (true, Primitive(list::is_list)),
-            (true, Primitive(list::map)),
-            (true, Primitive(list::filter)),
+            (true, Primitive(list, "list")),
+            (true, Primitive(list::is_list, "list?")),
+            (true, Primitive(list::map, "map")),
+            (true, Primitive(list::filter, "filter")),
 
             /* display */
-            (true, Primitive(display::display)),
-            (true, Primitive(display::newline)),
+            (true, Primitive(display::display, "display")),
+            (true, Primitive(display::newline, "newline")),
 
             /* misc */
-            (true, Primitive(control::exit)),
-            (true, Primitive(control::assert))
+            (true, Primitive(control::exit, "exit")),
+            (true, Primitive(control::assert, "assert"))
         ];
     };
     env

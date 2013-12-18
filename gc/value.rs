@@ -121,7 +121,7 @@ pub enum Value {
     Null,
     Num(gmp::Mpz),
     Pair(gc::Pair),
-    Primitive(primitives::Prim),
+    Primitive(primitives::Prim, &'static str),
     Symbol(vm::Handle),
     Unit
 }
@@ -134,7 +134,7 @@ impl Clone for Value {
             &Null => Null,
             &Num(ref n) => Num(n.clone()),
             &Pair(p) => Pair(p),
-            &Primitive(p) => Primitive(p),
+            &Primitive(p, n) => Primitive(p, n),
             &Symbol(h) => Symbol(h),
             &Unit => Unit
         }
@@ -150,7 +150,7 @@ impl ToStr for Value {
             &Null => ~"'()",
             &Num(ref i) => i.to_str(),
             &Pair(p) => format!("({:s})", p.to_str()),
-            &Primitive(_) => ~"#<procedure>",
+            &Primitive(_, _) => ~"#<procedure>",
             &Symbol(h) => format!("'{:s}", h.to_str()),
             &Unit => ~""
         }
@@ -172,7 +172,7 @@ impl Eq for Value {
                 (*cl1) == (*cl2)
             }
 
-            (&Primitive(p1), &Primitive(p2)) => {
+            (&Primitive(p1, _), &Primitive(p2, _)) => {
                 let p1: *() = unsafe { transmute(p1) };
                 let p2: *() = unsafe { transmute(p2) };
                 p1 == p2
@@ -203,7 +203,7 @@ impl Value {
                 (*cl1) == (*cl2)
             }
 
-            (&Primitive(p1), &Primitive(p2)) => {
+            (&Primitive(p1, _), &Primitive(p2, _)) => {
                 use std::cast::transmute;
                 let p1: *() = unsafe { transmute(p1) };
                 let p2: *() = unsafe { transmute(p2) };

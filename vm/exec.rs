@@ -249,7 +249,7 @@ impl VM {
     pub fn fun_call(&mut self, fun: &value::Value, argc: u8) {
         match fun {
             &value::Closure(cl) => self.closure_call(cl, argc),
-            &value::Primitive(prim) => {
+            &value::Primitive(prim, _) => {
                 let ret = self.prim_call(prim, argc);
                 self.stack.push(ret);
             }
@@ -260,7 +260,7 @@ impl VM {
     #[inline(always)]
     pub fn fun_call_ret(&mut self, fun: &value::Value, argc: u8) -> value::Value {
         match fun {
-            &value::Primitive(prim) => self.prim_call(prim, argc),
+            &value::Primitive(prim, _) => self.prim_call(prim, argc),
 
             &value::Closure(cl) => {
                 #[inline(always)]
@@ -391,7 +391,7 @@ impl VM {
                     // the compiler doesn't make the difference between
                     // a closure and a primitive, so a tail-call to a primitive
                     // may happen here
-                    value::Primitive(prim) => {
+                    value::Primitive(prim, _) => {
                         let ret = self.prim_call(prim, argc);
                         self.stack.push(ret);
                     }
