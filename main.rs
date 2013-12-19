@@ -18,6 +18,6 @@ fn main() {
 
     else {
         let mut vm = vm::VM::new();
-        vm.run_file(args[1]);
+        vm.run(args[1]);
     }
 }

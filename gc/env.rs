@@ -88,6 +88,9 @@ impl GCEnv {
         }}
     }
 
+    // dump he environment for debugging purposes
+
+    #[allow(dead_code)]
     pub fn dump(&self) {
         print("[ ");
 

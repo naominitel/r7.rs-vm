@@ -58,20 +58,6 @@ impl SymTable {
         self.syms.reserve(count);
     }
 
-    pub fn get_handle(&self, sym: &str) -> Handle {
-        *self.known_symbols.get(&sym.into_owned())
-    }
-
-    pub fn create_symbol(&mut self, sym: ~str) -> Handle {
-        if !self.known_symbols.contains_key(&sym.to_owned()) {
-            let h = Symbol::new(self, sym.clone());
-            self.known_symbols.insert(sym, h);
-            return h
-        }
-
-        fail!("Symbol already in table")
-    }
-
     pub fn get_or_create(&mut self, sym: ~str) -> Handle {
         match self.known_symbols.find(&sym) {
             Some(h) => return *h,
@@ -79,6 +65,8 @@ impl SymTable {
         }
 
         // not found
-        self.create_symbol(sym)
+        let h = Symbol::new(self, sym.clone());
+        self.known_symbols.insert(sym, h);
+        return h
     }
 }

@@ -115,13 +115,7 @@ impl VM {
         ::std::util::swap(&mut self.frame, &mut nframe);
     }
 
-    pub fn run(&mut self, lib: ~LibName) {
-        let l = Library::load(self.gc, self.sym_table, &*lib,
-            Library::library_path(None));
-        self.load_module(l);
-    }
-
-    pub fn run_file(&mut self, prog: ~str) {
+    pub fn run(&mut self, prog: ~str) {
         let p = Path::new(prog);
         let name = ~[~"main"];
         let l = Library::load_file(self.gc, self.sym_table, &p, ~LibName(name));
