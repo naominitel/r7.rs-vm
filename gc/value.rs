@@ -122,6 +122,8 @@ pub enum Value {
     Num(gmp::Mpz),
     Pair(gc::Pair),
     Primitive(primitives::Prim, &'static str),
+    // FIXME: garbage-collect strings
+    String(~str),
     Symbol(vm::Handle),
     Unit
 }
@@ -135,6 +137,7 @@ impl Clone for Value {
             &Num(ref n) => Num(n.clone()),
             &Pair(p) => Pair(p),
             &Primitive(p, n) => Primitive(p, n),
+            &String(ref s) => String(s.clone()),
             &Symbol(h) => Symbol(h),
             &Unit => Unit
         }
@@ -151,6 +154,7 @@ impl ToStr for Value {
             &Num(ref i) => i.to_str(),
             &Pair(p) => format!("({:s})", p.to_str()),
             &Primitive(_, _) => ~"#<procedure>",
+            &String(ref s) => s.clone(),
             &Symbol(h) => format!("'{:s}", h.to_str()),
             &Unit => ~""
         }

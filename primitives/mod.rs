@@ -8,6 +8,7 @@ pub use self::list::list;
 mod arith;
 mod boolean;
 mod control;
+mod convert;
 mod display;
 mod list;
 mod pair;
@@ -63,6 +64,10 @@ pub fn env(gc: &mut gc::GC) -> gc::Env {
             (true, Primitive(types::procedure, "procedure?")),
             (true, Primitive(types::symbol, "symbol?")),
             (true, Primitive(types::number, "number?")),
+
+            /* type converters */
+            (true, Primitive(convert::symbol_to_string, "symbol->string")),
+            (true, Primitive(convert::string_to_symbol, "string->symbol")),
 
             /* pair utils */
             (true, Primitive(pair::cons, "cons")),
