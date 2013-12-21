@@ -2,6 +2,7 @@ use gc;
 use gc::closure::GClosure;
 use gc::env::GCEnv;
 use gc::pair::GCPair;
+use gc::string::GCString;
 use gc::value;
 use gc::visit::Visitor;
 mod list;
@@ -138,5 +139,12 @@ impl GC {
 
         self.heap.insert(cl as ~GCollect);
         gc::Closure(ptr)
+    }
+
+    pub fn alloc_string(&mut self, str: ~str) -> gc::String {
+        let mut s = ~GCString { str: str, mark: self.current_mark };
+        let ptr = { let r: &mut GCString = s; r as *mut GCString };
+        self.heap.insert(s as ~GCollect);
+        gc::String(ptr)
     }
 }

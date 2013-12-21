@@ -3,6 +3,8 @@ use gc::env::Env;
 use gc::env::GCEnv;
 use gc::pair::Pair;
 use gc::pair::GCPair;
+use gc::string::String;
+use gc::string::GCString;
 use gc::Closure;
 use gc::value;
 use vm::Frame;
@@ -28,6 +30,7 @@ impl Visitor for Frame {
 }
 
 impl Visitor for Env {
+    #[inline(always)]
     fn visit(&mut self, m: bool) {
         unsafe { (**self).visit(m); }
     }
@@ -42,6 +45,7 @@ impl Visitor for GCEnv {
 }
 
 impl Visitor for Pair {
+    #[inline(always)]
     fn visit(&mut self, m: bool) {
         unsafe { (***self).visit(m); }
     }
@@ -62,6 +66,19 @@ impl Visitor for Closure {
                 (***self).mark(m);
             }
         }
+    }
+}
+
+impl Visitor for String {
+    #[inline(always)]
+    fn visit(&mut self, m: bool) {
+        unsafe { (***self).visit(m); }
+    }
+}
+
+impl Visitor for GCString {
+    fn visit(&mut self, m: bool) {
+        self.mark(m);
     }
 }
 
