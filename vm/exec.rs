@@ -11,18 +11,16 @@ use primitives;
 use std::hashmap::HashMap;
 use std::io::Reader;
 use std::num::FromPrimitive;
-use vm::Frame;
-use vm::Library;
+use vm::frame::Frame;
+use vm::library::Library;
 use vm::library::LibName;
-use vm::Stack;
-use vm::symbols::SymTable;
+use vm::stack::Stack;
 
 struct VM {
     frame: ~Frame,
     stack: Stack,
     gc: ~GC,
 
-    sym_table: ~SymTable,
     loaded_mods: HashMap<LibName, uint>,
     modules: ~[~Library]
 }
@@ -72,11 +70,10 @@ impl VM {
         let env = primitives::env(gc);
         let frame = Frame::new(env, 0, 0);
         let loaded_mods = HashMap::new();
-        let symtable = SymTable::new();
         let mods = ~[];
 
         ~VM { frame: frame, stack: stack, gc: gc, loaded_mods: loaded_mods,
-            sym_table: symtable, modules: mods }
+            modules: mods }
     }
 
     #[inline(always)]
@@ -118,7 +115,7 @@ impl VM {
     pub fn run(&mut self, prog: ~str) {
         let p = Path::new(prog);
         let name = ~[~"main"];
-        let l = Library::load_file(self.gc, self.sym_table, &p, ~LibName(name));
+        let l = Library::load_file(self.gc, &p, ~LibName(name));
         self.load_module(l);
     }
 
@@ -130,8 +127,7 @@ impl VM {
             let m = self.loaded_mods.find_copy(&**i);
 
             let l = if m == None {
-                let l = Library::load(self.gc, self.sym_table, *i,
-                    Library::library_path(None));
+                let l = Library::load(self.gc, *i, Library::library_path(None));
                 self.load_module(l);
                 self.modules.last()
             }
@@ -170,8 +166,6 @@ impl VM {
 
         // exec module
         self.exec_module();
-
-        self.sym_table.dump();
     }
 
     // Returns an environment containings the arguments of a closure,

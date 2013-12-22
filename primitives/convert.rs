@@ -4,13 +4,11 @@ use gc::value::Symbol;
 use primitives::Arguments;
 
 pub fn symbol_to_string(argv: Arguments) -> Value {
-    let str = match argv.vec() {
-        [Symbol(h)] => h.to_str(),
+    match argv.vec() {
+        [Symbol(h)] => String(h),
         [_] => fail!("Argument is not a symbol"),
         _ => fail!("Wrong number of parameters")
-    };
-
-    String(argv.vm().gc.alloc_string(str))
+    }
 }
 
 pub fn string_to_symbol(argv: Arguments) -> Value {
@@ -20,5 +18,5 @@ pub fn string_to_symbol(argv: Arguments) -> Value {
         _ => fail!("Wrong number of parameters")
     };
 
-    Symbol(argv.vm.sym_table.get_or_create(sym))
+    Symbol(argv.vm.gc.intern(sym))
 }

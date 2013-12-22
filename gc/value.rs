@@ -1,7 +1,6 @@
 use gc;
 use gmp;
 use primitives;
-use vm;
 
 pub mod list {
     use gc;
@@ -122,9 +121,8 @@ pub enum Value {
     Num(gmp::Mpz),
     Pair(gc::Pair),
     Primitive(primitives::Prim, &'static str),
-    // FIXME: garbage-collect strings
     String(gc::String),
-    Symbol(vm::Handle),
+    Symbol(gc::String),
     Unit
 }
 
@@ -184,7 +182,7 @@ impl Eq for Value {
 
             (&Num(ref i), &Num(ref j)) => i == j,
             (&Bool(b1), &Bool(b2)) => b1 == b2,
-            (&Symbol(h1), &Symbol(h2)) => h1 == h2,
+            (&Symbol(h1), &Symbol(h2)) => (*h1) == (*h2),
 
             (&Null, &Null) => true,
             (&Unit, &Unit) => true,
@@ -216,7 +214,7 @@ impl Value {
 
             (&Num(ref i), &Num(ref j)) => i == j,
             (&Bool(b1), &Bool(b2)) => b1 == b2,
-            (&Symbol(h1), &Symbol(h2)) => h1 == h2,
+            (&Symbol(h1), &Symbol(h2)) => (*h1) == (*h2),
 
             (&Null, &Null) => true,
             (&Unit, &Unit) => true,

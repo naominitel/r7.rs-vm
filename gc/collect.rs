@@ -5,6 +5,7 @@ use gc::pair::GCPair;
 use gc::string::GCString;
 use gc::value;
 use gc::visit::Visitor;
+use std::hashmap::HashMap;
 mod list;
 
 // Basic trait for garbage collected values
@@ -33,6 +34,15 @@ pub trait GCollect {
 
 struct GC {
     heap:  ~list::List<~GCollect>,
+
+    // string interner
+    // keeps in memory all the string constants loaded by the program.
+    // They include notably stirng literals, but also symbol names
+    // Currently, the interned strings are managed by the GC although they are
+    // not currently collected. This may change in the future
+    // all interned strings are immutable
+    interner: HashMap<~str, gc::String>,
+
     current_mark: bool
 }
 
@@ -40,6 +50,7 @@ impl GC {
     pub fn new() -> ~GC {
         ~GC {
             heap: list::List::new(),
+            interner: HashMap::new(),
             current_mark: false
         }
     }
@@ -89,6 +100,22 @@ impl GC {
         self.current_mark = !self.current_mark;
         self.mark(roots);
         GC::check_node(self.current_mark, self.heap.head);
+    }
+
+    // intern a new string into the interner, and return an handle to it
+    // if the string is already interned, just returns an handle on it
+
+    pub fn intern(&mut self, s: ~str) -> gc::String {
+        match self.interner.find(&s) {
+            Some(h) => return *h,
+            None => ()
+        }
+
+        // not found, allocate a new interned string
+        // FIXME: could-we avoid copy here ?
+        let interned = self.alloc_string(s.clone(), false);
+        self.interner.insert(s, interned);
+        interned
     }
 
     pub fn alloc_pair(&mut self) -> gc::Pair {
@@ -141,8 +168,12 @@ impl GC {
         gc::Closure(ptr)
     }
 
-    pub fn alloc_string(&mut self, str: ~str) -> gc::String {
-        let mut s = ~GCString { str: str, mark: self.current_mark };
+    pub fn alloc_string(&mut self, str: ~str, mutable: bool) -> gc::String {
+        let mut s = ~GCString {
+            str: str,
+            mark: self.current_mark,
+            mutable: mutable
+        };
         let ptr = { let r: &mut GCString = s; r as *mut GCString };
         self.heap.insert(s as ~GCollect);
         gc::String(ptr)

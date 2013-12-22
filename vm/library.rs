@@ -1,10 +1,9 @@
 use gc::Env;
+use gc::String;
 use std::io;
 use std::to_bytes::Cb;
 use std::vec::VecIterator;
 use std::vec;
-use vm::symbols::Handle;
-use vm::symbols::SymTable;
 
 static DEFAULT_PREFIX: &'static str = "/usr/local/";
 
@@ -43,7 +42,7 @@ struct Library {
     env: Env,
 
     imports: ~[~LibName],
-    sym_table: ~[Handle],
+    sym_table: ~[String],
     exports: u64
 }
 
@@ -57,8 +56,7 @@ impl Library {
         ~[prfx]
     }
 
-    pub fn load_file(gc: &mut ::gc::GC, symt: &mut SymTable,
-                     path: &Path, name: ~LibName) -> ~Library {
+    pub fn load_file(gc: &mut ::gc::GC, path: &Path, name: ~LibName) -> ~Library {
         /* found library */
         let mut f = match io::File::open(path) {
             Some(f) => f,
@@ -107,7 +105,6 @@ impl Library {
         f.seek(sym_tab_off as i64, io::SeekSet);
         let sym_count = f.read_be_u64();
         let mut mod_symt = vec::with_capacity(sym_count as uint);
-        symt.reserve(sym_count as uint);
         debug!("{:u} symbols in table", sym_count);
 
         for _ in range(0, sym_count) {
@@ -119,7 +116,7 @@ impl Library {
                 s.push_char(b as char);
             }
 
-            let h = symt.get_or_create(s);
+            let h = gc.intern(s);
             mod_symt.push(h);
         }
 
@@ -145,8 +142,7 @@ impl Library {
         }
     }
 
-    pub fn load(gc: &mut ::gc::GC, symt: &mut SymTable,
-                name: &LibName, lpath: ~[~Path]) -> ~Library {
+    pub fn load(gc: &mut ::gc::GC, name: &LibName, lpath: ~[~Path]) -> ~Library {
         let mut lpath = lpath;
 
         for p in lpath.mut_iter() {
@@ -156,7 +152,7 @@ impl Library {
 
             if p.is_file() {
                 debug!("Trying {:s}", p.display().to_str());
-                Library::load_file(gc, symt, &**p, ~name.clone());
+                Library::load_file(gc, &**p, ~name.clone());
             }
         }
 

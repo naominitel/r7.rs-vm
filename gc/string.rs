@@ -5,6 +5,7 @@ use gc::collect;
 #[packed]
 pub struct GCString {
     str: ~str,
+    mutable: bool,
     mark: bool
 }
 
