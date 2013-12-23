@@ -7,7 +7,7 @@ pub enum ListNode<T> {
     Node(T, ~ListNode<T>)
 }
 
-struct List<T> {
+pub struct List<T> {
     head: ~ListNode<T>
 }
 

@@ -16,7 +16,7 @@ use vm::library::Library;
 use vm::library::LibName;
 use vm::stack::Stack;
 
-struct VM {
+pub struct VM {
     frame: ~Frame,
     stack: Stack,
     gc: ~GC,

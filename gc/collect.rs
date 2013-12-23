@@ -32,7 +32,7 @@ pub trait GCollect {
 // is a couple of an owned box containing the allocated object, and a raw
 // ptr to the same object
 
-struct GC {
+pub struct GC {
     heap:  ~list::List<~GCollect>,
 
     // string interner

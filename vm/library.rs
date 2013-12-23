@@ -8,7 +8,7 @@ use std::vec;
 static DEFAULT_PREFIX: &'static str = "/usr/local/";
 
 #[deriving(Eq, Clone)]
-struct LibName(~[~str]);
+pub struct LibName(~[~str]);
 
 impl LibName {
     fn iter<'a>(&'a self) -> VecIterator<'a, ~str> {
@@ -36,7 +36,7 @@ impl IterBytes for LibName {
 //    }
 // }
 
-struct Library {
+pub struct Library {
     name: ~LibName,
     prog: ~[u8],
     env: Env,
