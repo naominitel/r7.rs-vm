@@ -183,6 +183,7 @@ impl Eq for Value {
             (&Num(ref i), &Num(ref j)) => i == j,
             (&Bool(b1), &Bool(b2)) => b1 == b2,
             (&Symbol(h1), &Symbol(h2)) => (*h1) == (*h2),
+            (&String(s1), &String(s2)) => (*s1) == (*s2),
 
             (&Null, &Null) => true,
             (&Unit, &Unit) => true,
@@ -215,6 +216,12 @@ impl Value {
             (&Num(ref i), &Num(ref j)) => i == j,
             (&Bool(b1), &Bool(b2)) => b1 == b2,
             (&Symbol(h1), &Symbol(h2)) => (*h1) == (*h2),
+
+            (&String(s1), &String(s2)) => {
+                let s1 = s1.as_slice();
+                let s2 = s2.as_slice();
+                s1 == s2
+            }
 
             (&Null, &Null) => true,
             (&Unit, &Unit) => true,
