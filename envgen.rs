@@ -19,18 +19,29 @@ fn gen_primitives_env(out: &mut Writer) {
     writeln!(out, "");
     writeln!(out, "primEnv :: [String]");
     writeln!(out, "primEnv = [");
+    let mut it = vals.iter();
 
-    for i in vals.iter() {
+    // first element: don't print the comma before
+    match it.next() {
+        Some(&(_, gc::value::Primitive(_, name))) =>
+            write!(out, "    \"{:s}\"", name),
+
+        Some(_) => (),
+        None => return
+    }
+
+    for i in it {
         match i {
             &(_, gc::value::Primitive(_, name)) => {
-                writeln!(out, "    \"{:s}\",", name);
+                write!(out, ",\n");
+                write!(out, "    \"{:s}\"", name);
             }
 
             _ => ()
         }
     }
 
-    writeln!(out, "]");
+    writeln!(out, "\n    ]");
 }
 
 fn main() {
