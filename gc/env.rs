@@ -7,9 +7,9 @@ use gc::visit::Visitor;
 type EnvItem = (bool, value::Value);
 
 pub struct GCEnv {
-    values: ~[EnvItem],
-    next: Option<Env>,
-    mark: bool
+    pub values: Vec<EnvItem>,
+    pub next: Option<Env>,
+    pub mark: bool
 }
 
 impl collect::GCollect for GCEnv {
@@ -37,7 +37,7 @@ impl GCEnv {
     pub fn store(&mut self, value: &value::Value, addr: u64) {
         if addr < self.values.capacity() as u64 {
             if addr < self.values.len() as u64 {
-                self.values[addr] = (true, value.clone());
+                *self.values.get_mut(addr as uint) = (true, value.clone());
             }
 
             else if addr == self.values.len() as u64 {
@@ -67,7 +67,7 @@ impl GCEnv {
     pub fn fetch(&mut self, addr: u64) -> value::Value {
         if addr < self.values.capacity() as u64 {
             if addr < self.values.len() as u64 {
-                let (d, ref v) = self.values[addr];
+                let &(d, ref v) = self.values.get(addr as uint);
 
                 if d {
                     v.clone()
@@ -92,17 +92,17 @@ impl GCEnv {
 
     #[allow(dead_code)]
     pub fn dump(&self) {
-        print("[ ");
+        print!("[ ");
 
         for i in self.values.iter() {
             debug!("{:?} ", i);
         }
 
-        print("]");
+        print!("]");
 
         match self.next {
             Some(e) => {
-                print(" => ");
+                print!(" => ");
                 unsafe { (*e).dump() };
             }
 

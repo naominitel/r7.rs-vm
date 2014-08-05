@@ -45,7 +45,7 @@ pub fn env(gc: &mut gc::GC) -> gc::Env {
 
     let env = gc.alloc_env(0, None);
     unsafe {
-        (*env).values = ~[
+        (*env).values = vec!(
             /* arith primitives */
             (true, Primitive(arith::add, "+")),
             (true, Primitive(arith::min, "-")),
@@ -89,14 +89,14 @@ pub fn env(gc: &mut gc::GC) -> gc::Env {
             /* misc */
             (true, Primitive(control::exit, "exit")),
             (true, Primitive(control::assert, "assert"))
-        ];
+        );
     };
     env
 }
 
 pub struct Arguments<'a> {
-    priv vm: &'a mut vm::VM,
-    priv argc: u8
+    pub vm: &'a mut vm::VM,
+    pub argc: u8
 }
 
 impl<'a> Arguments<'a> {
@@ -114,19 +114,14 @@ impl<'a> Arguments<'a> {
     fn vec(&'a self) -> &'a [gc::Value] {
         self.vm.stack.slice_from(self.vm.stack.len() - self.argc as uint)
     }
-
-    #[inline(always)]
-    fn vm(&'a self) -> &'a mut vm::VM {
-        &'a mut *self.vm
-    }
 }
 
 impl<'a> Index<u8, gc::Value> for Arguments<'a> {
     #[inline(always)]
-    fn index(&self, index: &u8) -> gc::Value {
+    fn index<'a>(&'a self, index: &u8) -> &'a gc::Value {
         // first arguments are at the top of the stack
         if self.argc == *index { fail!("waaaat") };
         let idx = self.vm.stack.len() - self.argc as uint + *index as uint;
-        self.vm.stack[idx].clone()
+        self.vm.stack.get(idx)
     }
 }

@@ -47,7 +47,7 @@ impl Visitor for GCEnv {
 impl Visitor for Pair {
     #[inline(always)]
     fn visit(&mut self, m: bool) {
-        unsafe { (***self).visit(m); }
+        unsafe { (*self).visit(m); }
     }
 }
 
@@ -61,9 +61,10 @@ impl Visitor for GCPair {
 
 impl Visitor for Closure {
     fn visit(&mut self, m: bool) {
+        let &Closure(ptr) = self;
         unsafe {
-            if !(***self).is_marked(m) {
-                (***self).mark(m);
+            if !(*ptr).is_marked(m) {
+                (*ptr).mark(m);
             }
         }
     }
@@ -72,7 +73,8 @@ impl Visitor for Closure {
 impl Visitor for String {
     #[inline(always)]
     fn visit(&mut self, m: bool) {
-        unsafe { (***self).visit(m); }
+        let &String(ptr) = self;
+        unsafe { (*ptr).visit(m); }
     }
 }
 

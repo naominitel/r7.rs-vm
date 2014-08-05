@@ -1,15 +1,16 @@
 use gc::collect;
 use gc::value;
 use gc::visit::Visitor;
+use std::fmt;
 
 // a garbage-collected Scheme pair
 
 #[packed]
 #[deriving(Clone)]
 pub struct GCPair {
-    car: value::Value,
-    cdr: value::Value,
-    mark: bool
+    pub car: value::Value,
+    pub cdr: value::Value,
+    pub mark: bool
 }
 
 impl collect::GCollect for GCPair {
@@ -28,45 +29,52 @@ impl collect::GCollect for GCPair {
 // this struct is used as the external representation of a pair, used
 // by Value and by the VM.
 
-pub struct Pair(*mut GCPair);
+#[deriving(PartialEq)]
+pub struct Pair(pub *mut GCPair);
 
 impl Clone for Pair {
     fn clone(&self) -> Pair {
-        Pair(**self)
+        let &Pair(ptr) = self;
+        Pair(ptr)
     }
 }
 
-impl ToStr for Pair {
-    fn to_str(&self) -> ~str {
-        let car = unsafe { (***self).car.to_str() };
+impl fmt::Show for Pair {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let car = self.car().to_string();
 
-        match unsafe { &(***self).cdr } {
-            &value::Pair(p) => format!("{:s} {:s}", car, p.to_str()),
-            &value::Null => format!("{:s}", car),
-            v => format!("{:s} . {:s}", car, v.to_str())
+        match unsafe { self.cdr() } {
+            value::Pair(p) => fmt.pad(format!("{:s} {:s}", car, p.to_string()).as_slice()),
+            value::Null => fmt.pad(format!("{:s}", car).as_slice()),
+            v => fmt.pad(format!("{:s} . {:s}", car, v.to_string()).as_slice())
         }
     }
 }
 
 impl Pair {
     pub fn car(self) -> value::Value {
-        unsafe { (**self).car.clone() }
+        let Pair(ptr) = self;
+        unsafe {(*ptr).car.clone() }
     }
 
     pub fn cdr(self) -> value::Value {
-        unsafe { (**self).cdr.clone() }
+        let Pair(ptr) = self;
+        unsafe { (*ptr).cdr.clone() }
     }
 
     pub fn cdr_ref<'a>(&'a self) -> &'a value::Value {
-        unsafe { &(***self).cdr }
+        let &Pair(ptr) = self;
+        unsafe { &(*ptr).cdr }
     }
 
-    pub fn setcar(self, car: &value::Value) {
-        unsafe { (**self).car = car.clone(); }
+    pub fn setcar(mut self, car: &value::Value) {
+        let Pair(ptr) = self;
+        unsafe { (*ptr).car = car.clone(); }
     }
 
-    pub fn setcdr(self, cdr: &value::Value) {
-        unsafe { (**self).cdr = cdr.clone(); }
+    pub fn setcdr(mut self, cdr: &value::Value) {
+        let Pair(ptr) = self;
+        unsafe { (*ptr).cdr = cdr.clone(); }
     }
 }
 

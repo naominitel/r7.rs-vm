@@ -1,6 +1,7 @@
 use gc;
 use gmp;
 use primitives;
+use std::fmt;
 
 pub mod list {
     use gc;
@@ -22,11 +23,11 @@ pub mod list {
     pub fn is_list(value: &Value) -> bool {
         let mut ret = true;
 
-        invalid_list::cond.trap(|_| {
+        for _ in iter(value, |_| {
             // non-pair value
             ret = false;
             None
-        }).inside(|| { for _ in iter(value) { } });
+        }) { };
 
         ret
     }
@@ -76,15 +77,12 @@ pub mod list {
     // iterates until it reaches a Null. If a non-pair or non-null value is
     // encountered, it raises the invalid_list condition
 
-    condition! {
-        pub invalid_list: ::gc::Value -> Option<::gc::Value>;
+    struct ListIterator<'a, 'b> {
+        cur: &'a Value,
+        trap: |Value|:'b -> Option<Value>
     }
 
-    struct ListIterator<'a> {
-        cur: &'a Value
-    }
-
-    impl<'a> Iterator<Value> for ListIterator<'a> {
+    impl<'a, 'b> Iterator<Value> for ListIterator<'a, 'b> {
         fn next(&mut self) -> Option<Value> {
             match self.cur {
                 &Null => None,
@@ -94,13 +92,13 @@ pub mod list {
                     Some(ret)
                 }
 
-                _ => invalid_list::cond.raise(self.cur.clone())
+                _ => (self.trap)(self.cur.clone())
             }
         }
     }
 
-    pub fn iter<'a>(v: &'a Value) -> ListIterator<'a> {
-        ListIterator { cur: v }
+    pub fn iter<'a, 'b>(v: &'a Value, trap: |Value|:'b -> Option<Value>) -> ListIterator<'a, 'b> {
+        ListIterator { cur: v, trap: trap }
     }
 }
 
@@ -142,32 +140,32 @@ impl Clone for Value {
     }
 }
 
-impl ToStr for Value {
-    fn to_str(&self) -> ~str {
+impl fmt::Show for Value {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &Bool(true) => ~"#t",
-            &Bool(false) => ~"#f",
-            &Closure(_) => ~"#<procedure>",
-            &Null => ~"'()",
-            &Num(ref i) => i.to_str(),
-            &Pair(p) => format!("({:s})", p.to_str()),
-            &Primitive(_, _) => ~"#<procedure>",
-            &String(s) => s.to_str(),
-            &Symbol(h) => format!("'{:s}", h.to_str()),
-            &Unit => ~""
+            &Bool(true) => fmt.pad("#t"),
+            &Bool(false) => fmt.pad("#f"),
+            &Closure(_) => fmt.pad("#<procedure>"),
+            &Null => fmt.pad("'()"),
+            &Num(ref i) => fmt.pad(format!("{:s}", i.to_string()).as_slice()),
+            &Pair(p) => fmt.pad(format!("({:s})", p.to_string()).as_slice()),
+            &Primitive(_, _) => fmt.pad("#<procedure>"),
+            &String(s) => fmt.pad(format!("{:s}", s.to_string()).as_slice()),
+            &Symbol(h) => fmt.pad(format!("'{:s}", h.to_string()).as_slice()),
+            &Unit => fmt.pad("")
         }
     }
 }
 
-impl Eq for Value {
+impl PartialEq for Value {
     // physical compareason
     fn eq(&self, v: &Value) -> bool {
-        use std::cast::transmute;
+        use std::mem::transmute;
 
         match (self, v) {
             (&Pair(p1), &Pair(p2)) => {
                 // eq do object-compareason
-                (*p1) == (*p2)
+                (p1) == (p2)
             }
 
             (&Closure(cl1), &Closure(cl2)) => {
@@ -175,15 +173,15 @@ impl Eq for Value {
             }
 
             (&Primitive(p1, _), &Primitive(p2, _)) => {
-                let p1: *() = unsafe { transmute(p1) };
-                let p2: *() = unsafe { transmute(p2) };
+                let p1: *const () = unsafe { transmute(p1) };
+                let p2: *const () = unsafe { transmute(p2) };
                 p1 == p2
             }
 
             (&Num(ref i), &Num(ref j)) => i == j,
             (&Bool(b1), &Bool(b2)) => b1 == b2,
-            (&Symbol(h1), &Symbol(h2)) => (*h1) == (*h2),
-            (&String(s1), &String(s2)) => (*s1) == (*s2),
+            (&Symbol(h1), &Symbol(h2)) => (h1) == (h2),
+            (&String(s1), &String(s2)) => (s1) == (s2),
 
             (&Null, &Null) => true,
             (&Unit, &Unit) => true,
@@ -207,15 +205,15 @@ impl Value {
             }
 
             (&Primitive(p1, _), &Primitive(p2, _)) => {
-                use std::cast::transmute;
-                let p1: *() = unsafe { transmute(p1) };
-                let p2: *() = unsafe { transmute(p2) };
+                use std::mem::transmute;
+                let p1: *const () = unsafe { transmute(p1) };
+                let p2: *const () = unsafe { transmute(p2) };
                 p1 == p2
             }
 
             (&Num(ref i), &Num(ref j)) => i == j,
             (&Bool(b1), &Bool(b2)) => b1 == b2,
-            (&Symbol(h1), &Symbol(h2)) => (*h1) == (*h2),
+            (&Symbol(h1), &Symbol(h2)) => (h1) == (h2),
 
             (&String(s1), &String(s2)) => {
                 let s1 = s1.as_slice();

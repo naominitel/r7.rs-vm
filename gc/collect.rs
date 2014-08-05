@@ -5,7 +5,9 @@ use gc::pair::GCPair;
 use gc::string::GCString;
 use gc::value;
 use gc::visit::Visitor;
-use std::hashmap::HashMap;
+use std::collections::hashmap::HashMap;
+
+#[path = "list.rs"]
 mod list;
 
 // Basic trait for garbage collected values
@@ -33,7 +35,7 @@ pub trait GCollect {
 // ptr to the same object
 
 pub struct GC {
-    heap:  ~list::List<~GCollect>,
+    heap:  Box<list::List<Box<GCollect>>>,
 
     // string interner
     // keeps in memory all the string constants loaded by the program.
@@ -41,14 +43,14 @@ pub struct GC {
     // Currently, the interned strings are managed by the GC although they are
     // not currently collected. This may change in the future
     // all interned strings are immutable
-    interner: HashMap<~str, gc::String>,
+    interner: HashMap<String, gc::String>,
 
     current_mark: bool
 }
 
 impl GC {
-    pub fn new() -> ~GC {
-        ~GC {
+    pub fn new() -> Box<GC> {
+        box GC {
             heap: list::List::new(),
             interner: HashMap::new(),
             current_mark: false
@@ -61,16 +63,16 @@ impl GC {
         }
     }
 
-    fn check_node(m: bool, node: &mut list::ListNode<~GCollect>) {
-        use std::util::swap;
+    fn check_node(m: bool, node: &mut list::ListNode<Box<GCollect>>) {
+        use std::mem::swap;
 
         match node {
             &list::Node(_, ref mut next) => {
-                let mut nnext = ~list::Empty;
+                let mut nnext = box list::Empty;
                 swap(next, &mut nnext);
 
-                if match nnext {
-                    ~list::Node(ref mut t, ref mut tail) => {
+                if match *&mut *nnext {
+                    list::Node(ref mut t, ref mut tail) => {
                         if !t.is_marked(m) {
                             swap(next, tail);
                             false
@@ -99,13 +101,13 @@ impl GC {
         debug!("GC: Start collection");
         self.current_mark = !self.current_mark;
         self.mark(roots);
-        GC::check_node(self.current_mark, self.heap.head);
+        GC::check_node(self.current_mark, &mut *self.heap.head);
     }
 
     // intern a new string into the interner, and return an handle to it
     // if the string is already interned, just returns an handle on it
 
-    pub fn intern(&mut self, s: ~str) -> gc::String {
+    pub fn intern(&mut self, s: String) -> gc::String {
         match self.interner.find(&s) {
             Some(h) => return *h,
             None => ()
@@ -119,40 +121,40 @@ impl GC {
     }
 
     pub fn alloc_pair(&mut self) -> gc::Pair {
-        let mut p = ~GCPair {
+        let mut p = box GCPair {
             mark: self.current_mark,
             car: value::Unit,
             cdr: value::Unit
         };
 
         let ptr = {
-            let r: &mut GCPair = p;
+            let r: &mut GCPair = &mut *p;
             r as *mut GCPair
         };
         
-        self.heap.insert(p as ~GCollect);
+        self.heap.insert(p as Box<GCollect>);
         gc::Pair(ptr)
     }
 
     pub fn alloc_env(&mut self, size: u64, next: Option<gc::Env>) -> gc::Env {
-        let mut env = ~GCEnv { 
-            values: ::std::vec::with_capacity(size as uint),
+        let mut env = box GCEnv {
+            values: Vec::with_capacity(size as uint),
             mark: self.current_mark,
             next: next
         };
 
         let ptr = { 
-            let r: &mut GCEnv = env;
+            let r: &mut GCEnv = &mut *env;
             r as *mut GCEnv 
         };
 
-        self.heap.insert(env as ~GCollect);
+        self.heap.insert(env as Box<GCollect>);
         ptr
     }
 
     pub fn alloc_closure(&mut self, arity: u8, variadic: bool,
         env: gc::Env, pc: u64) -> gc::Closure {
-        let mut cl = ~GClosure {
+        let mut cl = box GClosure {
             pc: pc,
             arity: arity,
             env: env,
@@ -160,22 +162,22 @@ impl GC {
             mark: self.current_mark
         };
         let ptr = {
-            let r: &mut GClosure = cl;
+            let r: &mut GClosure = &mut *cl;
             r as *mut GClosure
         };
 
-        self.heap.insert(cl as ~GCollect);
+        self.heap.insert(cl as Box<GCollect>);
         gc::Closure(ptr)
     }
 
-    pub fn alloc_string(&mut self, str: ~str, mutable: bool) -> gc::String {
-        let mut s = ~GCString {
+    pub fn alloc_string(&mut self, str: String, mutable: bool) -> gc::String {
+        let mut s = box GCString {
             str: str,
             mark: self.current_mark,
             mutable: mutable
         };
-        let ptr = { let r: &mut GCString = s; r as *mut GCString };
-        self.heap.insert(s as ~GCollect);
+        let ptr = { let r: &mut GCString = &mut *s; r as *mut GCString };
+        self.heap.insert(s as Box<GCollect>);
         gc::String(ptr)
     }
 }

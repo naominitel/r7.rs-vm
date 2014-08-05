@@ -3,15 +3,15 @@ use gc::GC;
 use gc::value::Value;
 
 pub struct Frame {
-    env: Env,
-    sp: uint,
-    pc: u64,
-    caller: Option<~Frame> 
+    pub env: Env,
+    pub sp: uint,
+    pub pc: u64,
+    pub caller: Option<Box<Frame>>
 }
 
 impl Frame {
-    pub fn new(base_env: Env, sp: uint, pc: u64) -> ~Frame {
-        ~Frame { env: base_env, sp: sp, pc: pc, caller: None }
+    pub fn new(base_env: Env, sp: uint, pc: u64) -> Box<Frame> {
+        box Frame { env: base_env, sp: sp, pc: pc, caller: None }
     }
 
     pub fn alloc(&mut self, gc: &mut GC, size: u64) {

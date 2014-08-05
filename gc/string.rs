@@ -1,12 +1,13 @@
 use gc::collect;
+use std::fmt;
 
 // a garbage-collected Scheme string
 
 #[packed]
 pub struct GCString {
-    str: ~str,
-    mutable: bool,
-    mark: bool
+    pub str: ::std::string::String,
+    pub mutable: bool,
+    pub mark: bool
 }
 
 impl collect::GCollect for GCString {
@@ -21,30 +22,26 @@ impl collect::GCollect for GCString {
     }
 }
 
-pub struct String(*mut GCString);
+#[deriving(PartialEq)]
+pub struct String(pub *mut GCString);
 
 impl Clone for String {
     fn clone(&self) -> String {
-        String(**self)
+        let &String(ptr) = self;
+        String(ptr)
     }
 }
 
-impl ToStr for String {
-    fn to_str(&self) -> ~str {
-        unsafe { (***self).str.clone() }
+impl fmt::Show for String {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let &String(ptr) = self;
+        unsafe { fmt.pad((*ptr).str.as_slice()) }
     }
 }
 
 impl Str for String {
     fn as_slice<'a>(&'a self) -> &'a str {
-        unsafe { (***self).str.as_slice() }
-    }
-
-    fn into_owned(self) -> ~str {
-        // we can't avoid copy since there are possibly other String instances
-        // pointing to this string (thing that rustc doesn't know because of
-        // raw pointers, so he would allow us to move the string out of self).
-        // so making a copy is the only safe thing to do
-        self.to_str()
+        let &String(ptr) = self;
+        unsafe { (*ptr).str.as_slice() }
     }
 }

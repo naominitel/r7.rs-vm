@@ -9,8 +9,8 @@ pub fn add(argv: Arguments) -> Value {
     let mut res: Mpz = Zero::zero();
 
     for i in range(0, argv.len()) {
-        match argv[i] {
-            Num(n) => res = res.add(&n),
+        match &argv[i] {
+            &Num(ref n) => res = res.add(n),
             _ => fail!("Value is not a number")
         }
     }
@@ -46,8 +46,8 @@ pub fn mul(argv: Arguments) -> Value {
     let mut res: Mpz = One::one();
 
     for i in range(0, argv.len()) {
-        match argv[i] {
-            Num(n) => res = res.mul(&n),
+        match &argv[i] {
+            &Num(ref n) => res = res.mul(n),
             _ => fail!("Value is not a number")
         }
     }

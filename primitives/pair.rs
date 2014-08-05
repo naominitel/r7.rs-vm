@@ -5,10 +5,12 @@ use gc::value::list;
 use primitives::Arguments;
 
 pub fn cons(argv: Arguments) -> Value {
-    match argv.vec() {
-        [ref v1, ref v2] => Pair (list::cons(v1, v2, argv.vm().gc)),
+    let (car, cdr) = match argv.vec() {
+        [ref car, ref cdr] => (car.clone(), cdr.clone()),
         _ => fail!("Wrong number of arguments")
-    }
+    };
+
+    Pair (list::cons(&car, &cdr, &mut *argv.vm.gc))
 }
 
 pub fn car(argv: Arguments) -> Value {

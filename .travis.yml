@@ -6,4 +6,4 @@ install:
     - sudo apt-get install libgmp3-dev
 script:
     - rustc rust-gmp/gmp.rs `pkg-config --libs gmp`
-    - rustc main.rs -Lrust-gmp/
+    - rustc main.rs -L.

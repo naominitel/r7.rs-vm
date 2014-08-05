@@ -1,4 +1,4 @@
 use gc::Value;
 
-pub type Stack = ~[Value];
+pub type Stack = Vec<Value>;
 

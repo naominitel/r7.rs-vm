@@ -4,28 +4,28 @@
 
 pub enum ListNode<T> {
     Empty,
-    Node(T, ~ListNode<T>)
+    Node(T, Box<ListNode<T>>)
 }
 
 pub struct List<T> {
-    head: ~ListNode<T>
+    pub head: Box<ListNode<T>>
 }
 
 impl<T> ListNode<T> {
-    fn cons(~self, data: T) -> ~ListNode<T> {
-        ~Node(data, self)
+    fn cons(self, data: T) -> Box<ListNode<T>> {
+        box Node(data, box self)
     }
 }
 
 impl<T> List<T> {
-    pub fn new() -> ~List<T> {
-        ~List { head: ~Empty }
+    pub fn new() -> Box<List<T>> {
+        box List { head: box Empty }
     }
 
     pub fn insert(&mut self, t: T) {
-        use std::util::swap;
+        use std::mem::swap;
 
-        let mut nhead = ~Empty;
+        let mut nhead = box Empty;
         swap(&mut self.head, &mut nhead);
         nhead = nhead.cons(t);
         swap(&mut self.head, &mut nhead);

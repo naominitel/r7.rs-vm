@@ -4,13 +4,13 @@ use gc::visit::Visitor;
 
 // Internal representation of a closure
 
-#[deriving(Eq, Clone)]
+#[deriving(PartialEq, Clone)]
 pub struct GClosure {
-    pc: u64,
-    env: Env,
-    arity: u8,
-    variadic: bool,
-    mark: bool
+    pub pc: u64,
+    pub env: Env,
+    pub arity: u8,
+    pub variadic: bool,
+    pub mark: bool
 }
 
 impl collect::GCollect for GClosure {
@@ -28,29 +28,35 @@ impl collect::GCollect for GClosure {
 // this struct is used as the external representation of a pair, used
 // by Value and by the VM.
 
-pub struct Closure(*mut GClosure);
+pub struct Closure(pub *mut GClosure);
 
-impl Clone for Closure {
-    fn clone(&self) -> Closure {
-        Closure(**self)
+impl Deref<GClosure> for Closure {
+    #[inline(always)]
+    fn deref<'a>(&'a self) -> &'a GClosure {
+        let &Closure(ptr) = self;
+        unsafe { ::std::mem::transmute(ptr) }
     }
 }
 
 impl Closure {
-    fn env(&self) -> Env {
-        unsafe { (***self).env }
+    #[inline(always)]
+    pub fn env(self) -> Env {
+        (*self).env
     }
 
-    fn pc(&self) -> u64 {
-        unsafe { (***self).pc }
+    #[inline(always)]
+    pub fn pc(self) -> u64 {
+        (*self).pc
     }
 
-    fn arity(&self) -> u8 {
-        unsafe { (***self).arity }
+    #[inline(always)]
+    pub fn arity(self) -> u8 {
+        (*self).arity
     }
 
-    fn variadic(&self) -> bool {
-        unsafe { (***self).variadic }
+    #[inline(always)]
+    pub fn variadic(self) -> bool {
+        (*self).variadic
     }
 }
 

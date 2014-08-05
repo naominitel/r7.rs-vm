@@ -11,7 +11,7 @@ pub fn list(argv: Arguments) -> Value {
 
     while i >= 0 {
         let v = argv[i as u8].clone();
-        let pair = argv.vm().gc.alloc_pair();
+        let pair = argv.vm.gc.alloc_pair();
         pair.setcar(&v);
         pair.setcdr(&ret);
         ret = Pair(pair);
@@ -30,55 +30,43 @@ pub fn is_list(argv: Arguments) -> Value {
 }
 
 pub fn map(argv: Arguments) -> Value {
-    match argv.vec() {
-        [ref fun, ref lst] => {
-            let vm = argv.vm();
-            let mut builder = list::LIST_BUILDER.clone();
-            builder.init();
-
-            list::invalid_list::cond.trap(|_| {
-                fail!("Error: expected a pair");
-            }).inside(|| {
-                for v in list::iter(lst) {
-                    // function calls requires arguments to be placed
-                    // on-stack before passing control to the function
-                    vm.stack.push(v);
-                    let ret = vm.fun_call_ret(fun, 1);
-                    builder.append(&ret, argv.vm().gc);
-                }
-            });
-
-            builder.get_list()
-        }
-
+    let (fun, lst) = match argv.vec() {
+        [ref fun, ref lst] => (fun.clone(), lst.clone()),
         _ => fail!("Wrong number of arguments")
+    };
+
+    let mut builder = list::LIST_BUILDER.clone();
+    builder.init();
+
+    for v in list::iter(&lst, |_| fail!("Error: expected a pair")) {
+        // function calls requires arguments to be placed
+        // on-stack before passing control to the function
+        argv.vm.stack.push(v);
+        let ret = argv.vm.fun_call_ret(&fun, 1);
+        builder.append(&ret, &mut *argv.vm.gc);
     }
+
+    builder.get_list()
 }
 
 pub fn filter(argv: Arguments) -> Value {
-    match argv.vec() {
-        [ref fun, ref lst] => {
-            let vm = argv.vm();
-            let mut builder = list::LIST_BUILDER.clone();
-            builder.init();
-
-            list::invalid_list::cond.trap(|_| {
-                fail!("Error: expected a pair");
-            }).inside(|| {
-                for v in list::iter(lst) {
-                    vm.stack.push(v.clone());
-                    let ret = vm.fun_call_ret(fun, 1);
-
-                    match ret {
-                        Bool(false) => (),
-                        _ => builder.append(&v, argv.vm().gc),
-                    }
-                }
-            });
-
-            builder.get_list()
-        }
-
+    let (fun, lst) = match argv.vec() {
+        [ref fun, ref lst] => (fun.clone(), lst.clone()),
         _ => fail!("Wrong number of arguments")
+    };
+
+    let mut builder = list::LIST_BUILDER.clone();
+    builder.init();
+
+    for v in list::iter(&lst, |_| fail!("Error: expected a pair")) {
+        argv.vm.stack.push(v.clone());
+        let ret = argv.vm.fun_call_ret(&fun, 1);
+
+        match ret {
+            Bool(false) => (),
+            _ => builder.append(&v, &mut *argv.vm.gc),
+        }
     }
+
+    builder.get_list()
 }

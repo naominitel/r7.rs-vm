@@ -1,24 +1,18 @@
+use gc;
 use gc::Env;
-use gc::String;
 use std::io;
-use std::to_bytes::Cb;
-use std::vec::VecIterator;
+use std::slice::Items;
 use std::vec;
 
 static DEFAULT_PREFIX: &'static str = "/usr/local/";
 
-#[deriving(Eq, Clone)]
-pub struct LibName(~[~str]);
+#[deriving(Eq, Clone, Hash, PartialEq)]
+pub struct LibName(pub Vec<String>);
 
 impl LibName {
-    fn iter<'a>(&'a self) -> VecIterator<'a, ~str> {
-        (**self).iter()
-    }
-}
-
-impl IterBytes for LibName {
-    fn iter_bytes(&self, lsb0: bool, f: Cb) -> bool {
-        (**self).iter_bytes(lsb0, f)
+    fn iter<'a>(&'a self) -> Items<'a, String> {
+        let &LibName(ref vec) = self;
+        vec.iter()
     }
 }
 
@@ -37,82 +31,82 @@ impl IterBytes for LibName {
 // }
 
 pub struct Library {
-    name: ~LibName,
-    prog: ~[u8],
-    env: Env,
+    pub name: Box<LibName>,
+    pub prog: Vec<u8>,
+    pub env: Env,
 
-    imports: ~[~LibName],
-    sym_table: ~[String],
-    exports: u64
+    pub imports: Vec<Box<LibName>>,
+    pub sym_table: Vec<gc::String>,
+    pub exports: u64
 }
 
 impl Library {
-    pub fn library_path(prefix: Option<~str>) -> ~[~Path] {
+    pub fn library_path(prefix: Option<String>) -> Vec<Box<Path>> {
         let prfx = match prefix {
-            Some(s) => ~Path::new(s),
-            None => ~Path::new(DEFAULT_PREFIX.into_owned())
+            Some(s) => box Path::new(s),
+            None => box Path::new(DEFAULT_PREFIX.into_owned())
         };
 
-        ~[prfx]
+        vec!(prfx)
     }
 
-    pub fn load_file(gc: &mut ::gc::GC, path: &Path, name: ~LibName) -> ~Library {
+    pub fn load_file(gc: &mut ::gc::GC, path: &Path, name: Box<LibName>) -> Box<Library> {
         /* found library */
         let mut f = match io::File::open(path) {
-            Some(f) => f,
-            None => fail!("Impossible to open library file")
+            Ok(f) => f,
+            Err(_) => fail!("Impossible to open library file")
         };
 
         let mut magic = [0, .. 3];
         f.read(magic.mut_slice_from(0));
 
-        if f.read_u8() != 0x01 {
+        if f.read_u8().unwrap() != 0x01 {
             fail!("Unsupported file format version.");
         }
 
         // reserved
         f.seek(28, io::SeekCur);
 
-        let sym_tab_off = f.read_be_u64();
-        let imports_off = f.read_be_u64();
-        let exports_off = f.read_be_u64();
-        let text_off = f.read_be_u64();
+        let sym_tab_off = f.read_be_u64().unwrap();
+        let imports_off = f.read_be_u64().unwrap();
+        let exports_off = f.read_be_u64().unwrap();
+        let text_off = f.read_be_u64().unwrap();
 
         f.seek(imports_off as i64, io::SeekSet);
-        let imports_count = f.read_be_u64();
+        let imports_count = f.read_be_u64().unwrap();
 
-        let mut imports = ::std::vec::with_capacity(imports_count as uint);
+        let mut imports = Vec::with_capacity(imports_count as uint);
         for _ in range(0, imports_count) {
             // read libname
-            let length = f.read_be_u64();
-            let mut lname = ::std::vec::with_capacity(length as uint);
+            let length = f.read_be_u64().unwrap();
+            let mut lname = Vec::with_capacity(length as uint);
 
             for _ in range(0, length) {
-                let size = f.read_be_u64();
-                let mut part = ~"";
+                let size = f.read_be_u64().unwrap();
+                let mut part = ::std::string::String::from_str("");
 
                 for _ in range(0, size) {
-                    let ch = f.read_u8();
+                    let ch = f.read_u8().unwrap();
                     part.push_char(ch as char);
                 }
 
                 lname.push(part);
             }
 
-            imports.push(~LibName(lname));
+            imports.push(box LibName(lname));
         }
 
         f.seek(sym_tab_off as i64, io::SeekSet);
-        let sym_count = f.read_be_u64();
-        let mut mod_symt = vec::with_capacity(sym_count as uint);
+        let sym_count = f.read_be_u64().unwrap();
+        let mut mod_symt = Vec::with_capacity(sym_count as uint);
         debug!("{:u} symbols in table", sym_count);
 
         for _ in range(0, sym_count) {
-            let sz = f.read_be_u64();
-            let mut s = ~"";
+            let sz = f.read_be_u64().unwrap();
+            let mut s = String::from_str("");
 
             for _ in range(0, sz) {
-                let b = f.read_u8();
+                let b = f.read_u8().unwrap();
                 s.push_char(b as char);
             }
 
@@ -121,28 +115,28 @@ impl Library {
         }
 
         f.seek(exports_off as i64, io::SeekSet);
-        let exports_count = f.read_be_u64();
+        let exports_count = f.read_be_u64().unwrap();
 
         let env = gc.alloc_env(exports_count, None);
 
         debug!("Trying to access program text section at {:x}", text_off);
         f.seek(text_off as i64, io::SeekSet);
-        let text_size = f.read_be_u64();
-        let mut text = ::std::vec::with_capacity(text_size as uint);
+        let text_size = f.read_be_u64().unwrap();
+        let mut text = Vec::with_capacity(text_size as uint);
 
         for _ in range(0, text_size) {
-            let b = f.read_u8();
+            let b = f.read_u8().unwrap();
             text.push(b);
         }
 
         debug!("Sucessfully loaded library");
-        ~Library {
+        box Library {
             env: env, prog: text, name: name, sym_table: mod_symt,
             imports: imports, exports: exports_count
         }
     }
 
-    pub fn load(gc: &mut ::gc::GC, name: &LibName, lpath: ~[~Path]) -> ~Library {
+    pub fn load(gc: &mut ::gc::GC, name: &LibName, lpath: Vec<Box<Path>>) -> Box<Library> {
         let mut lpath = lpath;
 
         for p in lpath.mut_iter() {
@@ -151,8 +145,8 @@ impl Library {
             }
 
             if p.is_file() {
-                debug!("Trying {:s}", p.display().to_str());
-                Library::load_file(gc, &**p, ~name.clone());
+                debug!("Trying {:s}", p.display().to_string());
+                Library::load_file(gc, &**p, box name.clone());
             }
         }
 
