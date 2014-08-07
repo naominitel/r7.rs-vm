@@ -40,12 +40,10 @@ static env: &'static GCEnv = &GCEnv {
 static primEnv: Env = (env as *GCEnv) as *mut GCEnv;
 */
 
-pub fn env(gc: &mut gc::GC) -> gc::Env {
+pub fn env(gc: &mut gc::GC) -> gc::Ptr<gc::Env> {
     use gc::value::Primitive;
-
-    let env = gc.alloc_env(0, None);
-    unsafe {
-        (*env).values = vec!(
+    gc.alloc(gc::Env {
+        values: vec!(
             /* arith primitives */
             (true, Primitive(arith::add, "+")),
             (true, Primitive(arith::min, "-")),
@@ -89,9 +87,9 @@ pub fn env(gc: &mut gc::GC) -> gc::Env {
             /* misc */
             (true, Primitive(control::exit, "exit")),
             (true, Primitive(control::assert, "assert"))
-        );
-    };
-    env
+        ),
+        next: None
+    })
 }
 
 pub struct Arguments<'a> {

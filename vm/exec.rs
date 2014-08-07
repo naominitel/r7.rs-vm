@@ -3,9 +3,9 @@ use common::bytecode::base;
 use common::bytecode::off;
 use common::bytecode::Opcode;
 use common::bytecode::Type;
-use gc::Closure;
-use gc::Env;
+use gc;
 use gc::GC;
+use gc::Ptr;
 use gc::value;
 use primitives;
 use std::collections::hashmap::HashMap;
@@ -56,7 +56,7 @@ impl VM {
         unsafe { ::std::mem::transmute(ty) }
     }
 
-    fn push_frame(&mut self, pc: u64, env: Env) {
+    fn push_frame(&mut self, pc: u64, env: Ptr<gc::Env>) {
         let mut frame = Frame::new(env, self.stack.len(), pc);
         let mut nframe = Frame::new(env, 0, 0);
 
@@ -67,7 +67,7 @@ impl VM {
     }
 
     fn pop_frame(&mut self) {
-        let mut nframe = Frame::new((0 as Env), 0, 0);
+        let mut nframe = Frame::new(Ptr(0 as *mut gc::ptr::Cell<gc::Env>), 0, 0);
 
         match self.frame.caller {
             Some(ref mut f) => {
@@ -190,7 +190,7 @@ impl VM {
             debug!("Require lib");
             let m = self.loaded_mods.find_copy(&**i);
 
-            let l = if m == None {
+            let mut l = if m == None {
                 let l = Library::load(&mut *self.gc, &**i, Library::library_path(None));
                 self.load_module(l);
                 self.modules.last().unwrap()
@@ -200,12 +200,19 @@ impl VM {
                 self.modules.get(m.unwrap())
             };
 
-            let nenv = self.gc.alloc_env(l.exports, env);
+            let mut nenv = self.gc.alloc(gc::Env {
+                values: Vec::with_capacity(l.exports as uint),
+                next: env
+            });
+
             let mut i = 0;
 
+            // FIXME: why is this neccessary?
+            let mut e = l.env;
+
             unsafe {            
-                for &(_, ref e) in (*l.env).values.iter() {
-                    (*nenv).store(e, i);
+                for &(_, ref e) in e.values.iter() {
+                    nenv.store(e, i);
                     i += 1;
                 }
             }
@@ -213,8 +220,8 @@ impl VM {
             env = Some(nenv);
         }
 
-        let nenv = lib.env;
-        unsafe { (*nenv).next = env; }
+        let mut nenv = lib.env;
+        nenv.next = env;
 
         let idx = self.modules.len();
         self.loaded_mods.insert(*lib.name.clone(), idx);
@@ -235,16 +242,19 @@ impl VM {
     // Returns an environment containings the arguments of a closure,
     // taken on the stack
     #[inline(always)]
-    fn get_args_env(&mut self, argc: u8, cl: Closure) -> Env {
-        let arity = cl.arity();
-        let variadic = cl.variadic();
+    fn get_args_env(&mut self, argc: u8, cl: Ptr<gc::Closure>) -> Ptr<gc::Env> {
+        let arity = cl.arity;
+        let variadic = cl.variadic;
 
         if variadic {
             if argc < arity {
                 fail!("Wrong number of arguments");
             }
 
-            let env = self.gc.alloc_env((arity + 1) as u64, Some(cl.env()));
+            let mut env = self.gc.alloc(gc::Env {
+                values: Vec::with_capacity(arity as uint + 1),
+                next: Some(cl.env)
+            });
 
             let va_count = argc - arity;
             let va_args = self.prim_call(primitives::list, va_count);
@@ -253,7 +263,7 @@ impl VM {
 
             for i in range(0, arity) {
                 let arg = self.stack.get(base + i as uint).clone();
-                unsafe { (*env).values.push((true, arg)); }
+                unsafe { env.values.push((true, arg)); }
             }
 
             // remove arguments from the stack
@@ -268,12 +278,16 @@ impl VM {
                 fail!("Wrong number of arguments");
             }
 
-            let env = self.gc.alloc_env(argc as u64, Some(cl.env()));
+            let mut env = self.gc.alloc(gc::Env {
+                values: Vec::with_capacity(argc as uint),
+                next: Some(cl.env)
+            });
+
             let base = self.stack.len() - argc as uint;
 
             for i in range(0, argc) {
                 let arg = self.stack.get(base + i as uint).clone();
-                unsafe { (*env).values.push((true, arg)); }
+                unsafe { env.values.push((true, arg)); }
             }
 
             // remove arguments from the stack
@@ -284,9 +298,9 @@ impl VM {
     }
 
     #[inline(always)]
-    fn closure_call(&mut self, cl: Closure, argc: u8) {
+    fn closure_call(&mut self, cl: Ptr<gc::Closure>, argc: u8) {
         let env = self.get_args_env(argc, cl);
-        self.push_frame(cl.pc(), env);
+        self.push_frame(cl.pc, env);
     }
 
     #[inline(always)]
@@ -399,8 +413,14 @@ impl VM {
                         let clpc = (arg as u64) | base;
                         let env = self.frame.env;
 
-                        value::Closure(self.gc.alloc_closure(
-                            arity, variadic, env, clpc))
+                        value::Closure(self.gc.alloc(
+                            gc::Closure {
+                                arity: arity,
+                                variadic: variadic,
+                                env: env,
+                                pc: clpc
+                            }
+                        ))
                     }
 
                     bytecode::Prim => {
@@ -436,7 +456,7 @@ impl VM {
                         // of the frame will be collected if it is not still
                         // captured by a visible closure
                         self.frame.sp = self.stack.len();
-                        self.frame.pc = cl.pc();
+                        self.frame.pc = cl.pc;
                         self.frame.env = env;
                     }
 

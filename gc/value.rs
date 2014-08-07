@@ -12,12 +12,11 @@ pub mod list {
 
     // various functions for manipulating Scheme lists and pairs
 
-    pub fn cons(car: &Value, cdr: &Value, gc: &mut gc::GC) -> gc::Pair {
-        let p = gc.alloc_pair();
-
-        p.setcar(car);
-        p.setcdr(cdr);
-        p
+    pub fn cons(car: &Value, cdr: &Value, gc: &mut gc::GC) -> gc::Ptr<gc::Pair> {
+        gc.alloc(gc::Pair {
+            car: car.clone(),
+            cdr: cdr.clone()
+        })
     }
 
     pub fn is_list(value: &Value) -> bool {
@@ -36,40 +35,43 @@ pub mod list {
 
     #[deriving(Clone)]
     struct ListBuilder {
-        fst: gc::pair::GCPair,
-        ptr: gc::Pair,
+        fst: gc::ptr::Cell<gc::Pair>,
+        ptr: gc::Ptr<gc::Pair>,
     }
 
     pub static LIST_BUILDER: ListBuilder = ListBuilder {
         // allocate a dummy pair that will in fact point to the first
         // true element of the list to allow fast insertions
-        fst: gc::pair::GCPair {
-            car: Unit,
-            cdr: Null,
+        fst: gc::ptr::Cell {
+            data: gc::Pair {
+                car: Unit,
+                cdr: Null
+            },
+
             mark: false
         },
 
-        ptr: gc::Pair(0 as *mut gc::pair::GCPair)
+        ptr: gc::Ptr(0 as *mut gc::ptr::Cell<gc::Pair>)
     };
 
     impl ListBuilder {
         #[inline(always)]
         pub fn init(&mut self) {
-            self.ptr = gc::Pair(&mut self.fst);
+            self.ptr = gc::Ptr(&mut self.fst);
         }
 
         #[inline(always)]
         pub fn append(&mut self, v: &Value, gc: &mut gc::GC) {
             // this one is GC'd
             let pair = cons(v, &Null, gc);
-            self.ptr.setcdr(&Pair(pair));
+            self.ptr.cdr = Pair(pair);
             self.ptr = pair;
         }
 
         #[inline(always)]
         pub fn get_list(&self) -> Value {
             // remove dummy node
-            self.fst.cdr.clone()
+            self.fst.data.cdr.clone()
         }
     }
 
@@ -87,9 +89,8 @@ pub mod list {
             match self.cur {
                 &Null => None,
                 &Pair(ref p) => {
-                    let ret = p.car();
-                    self.cur = p.cdr_ref();
-                    Some(ret)
+                    self.cur = &p.cdr;
+                    Some(p.car.clone())
                 }
 
                 _ => (self.trap)(self.cur.clone())
@@ -114,13 +115,13 @@ pub mod list {
 // FIXME: bug #10501 #[deriving(Clone)]
 pub enum Value {
     Bool(bool),
-    Closure(gc::Closure),
+    Closure(gc::Ptr<gc::Closure>),
     Null,
     Num(gmp::Mpz),
-    Pair(gc::Pair),
+    Pair(gc::Ptr<gc::Pair>),
     Primitive(primitives::Prim, &'static str),
-    String(gc::String),
-    Symbol(gc::String),
+    String(gc::Ptr<gc::String>),
+    Symbol(gc::Ptr<gc::String>),
     Unit
 }
 
@@ -195,9 +196,8 @@ impl Value {
     // structural compareason
     pub fn compare(&self, other: &Value) -> bool {
         match (self, other) {
-            (&Pair(p1), &Pair(p2)) => {
-                p1.car().compare(&p2.car()) &&
-                    p1.cdr().compare(&p2.cdr())
+            (&Pair(mut p1), &Pair(p2)) => {
+                p1.car.compare(&p2.car) && p1.cdr.compare(&p2.cdr)
             }
 
             (&Closure(cl1), &Closure(cl2)) => {
@@ -215,9 +215,9 @@ impl Value {
             (&Bool(b1), &Bool(b2)) => b1 == b2,
             (&Symbol(h1), &Symbol(h2)) => (h1) == (h2),
 
-            (&String(s1), &String(s2)) => {
-                let s1 = s1.as_slice();
-                let s2 = s2.as_slice();
+            (&String(mut s1), &String(mut s2)) => {
+                let s1 = s1.str.as_slice();
+                let s2 = s2.str.as_slice();
                 s1 == s2
             }
 

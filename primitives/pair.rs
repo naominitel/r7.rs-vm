@@ -15,21 +15,21 @@ pub fn cons(argv: Arguments) -> Value {
 
 pub fn car(argv: Arguments) -> Value {
     match argv.vec() {
-        [Pair(p)] => p.car(),
+        [Pair(mut p)] => p.car.clone(),
         _ => fail!("Bad argument")
     }
 }
 
 pub fn cdr(argv: Arguments) -> Value {
     match argv.vec() {
-        [Pair(p)] => p.cdr(),
+        [Pair(mut p)] => p.cdr.clone(),
         _ => fail!("Bad arguments")
     }
 }
 
 pub fn setcar(argv: Arguments) -> Value {
     match argv.vec() {
-        [Pair(p), ref v] => p.setcar(v),
+        [Pair(mut p), ref v] => p.car = v.clone(),
         _ => fail!("Attempting to setcar! on a non-pair value")
     }
 
@@ -38,7 +38,7 @@ pub fn setcar(argv: Arguments) -> Value {
 
 pub fn setcdr(argv: Arguments) -> Value {
     match argv.vec() {
-        [Pair(p), ref v] => p.setcdr(v),
+        [Pair(mut p), ref v] => p.cdr = v.clone(),
         _ => fail!("Attempting to setcdr! on a non-pair value")
     }
 

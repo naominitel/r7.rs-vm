@@ -33,10 +33,10 @@ impl LibName {
 pub struct Library {
     pub name: Box<LibName>,
     pub prog: Vec<u8>,
-    pub env: Env,
+    pub env: gc::Ptr<Env>,
 
     pub imports: Vec<Box<LibName>>,
-    pub sym_table: Vec<gc::String>,
+    pub sym_table: Vec<gc::Ptr<gc::String>>,
     pub exports: u64
 }
 
@@ -117,7 +117,10 @@ impl Library {
         f.seek(exports_off as i64, io::SeekSet);
         let exports_count = f.read_be_u64().unwrap();
 
-        let env = gc.alloc_env(exports_count, None);
+        let env = gc.alloc(Env {
+            values: Vec::with_capacity(exports_count as uint),
+            next: None
+        });
 
         debug!("Trying to access program text section at {:x}", text_off);
         f.seek(text_off as i64, io::SeekSet);

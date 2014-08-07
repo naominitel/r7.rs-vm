@@ -1,10 +1,8 @@
-use gc::collect::GCollect;
+use gc;
 use gc::env::Env;
-use gc::env::GCEnv;
 use gc::pair::Pair;
-use gc::pair::GCPair;
+use gc::ptr::Ptr;
 use gc::string::String;
-use gc::string::GCString;
 use gc::Closure;
 use gc::value;
 use vm::Frame;
@@ -16,71 +14,13 @@ use vm::Stack;
 // it marks it and continues through it
 
 pub trait Visitor {
-    fn visit(&mut self, gcmark: bool);
+    fn visit(&mut self, mark: bool);
 }
 
 impl Visitor for Frame {
     fn visit(&mut self, m: bool) {
         self.env.visit(m);
-
-        self.caller.as_mut().map(|f| {
-            f.visit(m);
-        });
-    }
-}
-
-impl Visitor for Env {
-    #[inline(always)]
-    fn visit(&mut self, m: bool) {
-        unsafe { (**self).visit(m); }
-    }
-}
-
-impl Visitor for GCEnv {
-    fn visit(&mut self, m: bool) {
-        if !self.is_marked(m) {
-            self.mark(m);
-        }
-    }
-}
-
-impl Visitor for Pair {
-    #[inline(always)]
-    fn visit(&mut self, m: bool) {
-        unsafe { (*self).visit(m); }
-    }
-}
-
-impl Visitor for GCPair {
-    fn visit(&mut self, m: bool) {
-        if !self.is_marked(m) {
-            self.mark(m);
-        }
-    }
-}
-
-impl Visitor for Closure {
-    fn visit(&mut self, m: bool) {
-        let &Closure(ptr) = self;
-        unsafe {
-            if !(*ptr).is_marked(m) {
-                (*ptr).mark(m);
-            }
-        }
-    }
-}
-
-impl Visitor for String {
-    #[inline(always)]
-    fn visit(&mut self, m: bool) {
-        let &String(ptr) = self;
-        unsafe { (*ptr).visit(m); }
-    }
-}
-
-impl Visitor for GCString {
-    fn visit(&mut self, m: bool) {
-        self.mark(m);
+        self.caller.as_mut().map(|f| f.visit(m));
     }
 }
 
@@ -104,5 +44,3 @@ impl Visitor for Stack {
         }
     }
 }
-
-

@@ -1,3 +1,4 @@
+use gc;
 use gc::Value;
 use gc::value::Bool;
 use gc::value::Null;
@@ -11,9 +12,11 @@ pub fn list(argv: Arguments) -> Value {
 
     while i >= 0 {
         let v = argv[i as u8].clone();
-        let pair = argv.vm.gc.alloc_pair();
-        pair.setcar(&v);
-        pair.setcdr(&ret);
+        let pair = argv.vm.gc.alloc(gc::Pair {
+            car: v.clone(),
+            cdr: ret.clone()
+        });
+
         ret = Pair(pair);
         i -= 1
     }
