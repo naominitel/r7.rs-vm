@@ -1,5 +1,4 @@
 use RString = std::string::String;
-use gc;
 use std::fmt;
 
 // a garbage-collected Scheme string

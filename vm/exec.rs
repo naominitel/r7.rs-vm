@@ -80,20 +80,23 @@ impl VM {
         ::std::mem::swap(&mut self.frame, &mut nframe);
     }
 
+    #[allow(dead_code)]
     fn eof(&mut self) -> bool {
         let base = base(self.frame.pc);
-        self.modules.get(base as uint).prog.len() == off(self.frame.pc) as uint
+        self.modules[base as uint].prog.len() == off(self.frame.pc) as uint
     }
 
+    #[allow(dead_code)]
     fn read_u8(&mut self) -> u8 {
         let base = base(self.frame.pc);
-        let lib = &self.modules.get(base as uint);
+        let lib = &self.modules[base as uint];
 
-        let &b = lib.prog.get(off(self.frame.pc) as uint);
+        let b = lib.prog[off(self.frame.pc) as uint];
         self.frame.pc += 1;
         b
     }
 
+    #[allow(dead_code)]
     fn read_le_uint_n(&mut self, nbytes: uint) -> u64 {
         assert!(nbytes > 0 && nbytes <= 8);
 
@@ -108,10 +111,12 @@ impl VM {
         val
     }
 
+    #[allow(dead_code)]
     fn read_le_int_n(&mut self, nbytes: uint) -> i64 {
         extend_sign(self.read_le_uint_n(nbytes), nbytes)
     }
 
+    #[allow(dead_code)]
     fn read_be_uint_n(&mut self, nbytes: uint) -> u64 {
         assert!(nbytes > 0 && nbytes <= 8);
 
@@ -124,54 +129,67 @@ impl VM {
         val
     }
 
+    #[allow(dead_code)]
     fn read_be_int_n(&mut self, nbytes: uint) -> i64 {
         extend_sign(self.read_be_uint_n(nbytes), nbytes)
     }
 
+    #[allow(dead_code)]
     fn read_be_u64(&mut self) -> u64 {
         self.read_be_uint_n(8)
     }
 
+    #[allow(dead_code)]
     fn read_be_u32(&mut self) -> u32 {
         self.read_be_uint_n(4) as u32
     }
 
+    #[allow(dead_code)]
     fn read_be_u16(&mut self) -> u16 {
         self.read_be_uint_n(2) as u16
     }
 
+    #[allow(dead_code)]
     fn read_be_i64(&mut self) -> i64 {
         self.read_be_int_n(8)
     }
 
+    #[allow(dead_code)]
     fn read_be_i32(&mut self) -> i32 {
         self.read_be_int_n(4) as i32
     }
 
+    #[allow(dead_code)]
     fn read_be_i16(&mut self) -> i16 {
         self.read_be_int_n(2) as i16
     }
 
+    #[allow(dead_code)]
     fn read_le_u64(&mut self) -> u64 {
         self.read_le_uint_n(8)
     }
 
+    #[allow(dead_code)]
     fn read_le_u32(&mut self) -> u32 {
         self.read_le_uint_n(4) as u32
     }
 
+    #[allow(dead_code)]
     fn read_le_u16(&mut self) -> u16 {
         self.read_le_uint_n(2) as u16
     }
 
+    #[allow(dead_code)]
     fn read_le_i64(&mut self) -> i64 {
         self.read_le_int_n(8)
     }
 
+    #[allow(dead_code)]
     fn read_le_i32(&mut self) -> i32 {
         self.read_le_int_n(4) as i32
     }
 
+    #[allow(dead_code)]
     fn read_le_i16(&mut self) -> i16 {
         self.read_le_int_n(2) as i16
     }
@@ -190,14 +208,14 @@ impl VM {
             debug!("Require lib");
             let m = self.loaded_mods.find_copy(&**i);
 
-            let mut l = if m == None {
+            let l = if m == None {
                 let l = Library::load(&mut *self.gc, &**i, Library::library_path(None));
                 self.load_module(l);
-                self.modules.last().unwrap()
+                &**self.modules.last().unwrap()
             }
 
             else {
-                self.modules.get(m.unwrap())
+                &*self.modules[m.unwrap()]
             };
 
             let mut nenv = self.gc.alloc(gc::Env {
@@ -210,11 +228,9 @@ impl VM {
             // FIXME: why is this neccessary?
             let mut e = l.env;
 
-            unsafe {            
-                for &(_, ref e) in e.values.iter() {
-                    nenv.store(e, i);
-                    i += 1;
-                }
+            for &(_, ref e) in e.values.iter() {
+                nenv.store(e, i);
+                i += 1;
             }
 
             env = Some(nenv);
@@ -262,14 +278,14 @@ impl VM {
             let base = self.stack.len() - arity as uint;
 
             for i in range(0, arity) {
-                let arg = self.stack.get(base + i as uint).clone();
-                unsafe { env.values.push((true, arg)); }
+                let arg = self.stack[base + i as uint].clone();
+                env.values.push((true, arg));
             }
 
             // remove arguments from the stack
             self.stack.truncate(base);
 
-            unsafe { (*env).values.push((true, va_args)); }
+            env.values.push((true, va_args));
             env
         }
 
@@ -286,8 +302,8 @@ impl VM {
             let base = self.stack.len() - argc as uint;
 
             for i in range(0, argc) {
-                let arg = self.stack.get(base + i as uint).clone();
-                unsafe { env.values.push((true, arg)); }
+                let arg = self.stack[base + i as uint].clone();
+                env.values.push((true, arg));
             }
 
             // remove arguments from the stack
@@ -399,8 +415,8 @@ impl VM {
                     bytecode::Sym => {
                         let base = base(self.frame.pc);
                         let arg = self.read_be_u64();
-                        let lib = self.modules.get(base as uint);
-                        let &h = lib.sym_table.get(arg as uint);
+                        let lib = &self.modules[base as uint];
+                        let h = lib.sym_table[arg as uint];
                         value::Symbol(h)
                     }
 
@@ -408,7 +424,7 @@ impl VM {
                         // closure
                         let arg = self.read_be_u32();
                         let arity = self.read_u8();
-                        let variadic = (self.read_u8() != 0x00);
+                        let variadic = self.read_u8() != 0x00;
                         let base = self.frame.pc & 0xFFFF0000;
                         let clpc = (arg as u64) | base;
                         let env = self.frame.env;

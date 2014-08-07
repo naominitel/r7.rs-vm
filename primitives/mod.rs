@@ -120,6 +120,6 @@ impl<'a> Index<u8, gc::Value> for Arguments<'a> {
         // first arguments are at the top of the stack
         if self.argc == *index { fail!("waaaat") };
         let idx = self.vm.stack.len() - self.argc as uint + *index as uint;
-        self.vm.stack.get(idx)
+        &self.vm.stack[idx]
     }
 }

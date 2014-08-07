@@ -1,4 +1,4 @@
-#![crate_id = "scmrun#0.1"]
+#![crate_name = "scmrun"]
 #![deny(unnecessary_qualification)]
 #![deny(non_camel_case_types)]
 #![deny(non_uppercase_statics)]
@@ -23,6 +23,6 @@ fn main() {
 
     else {
         let mut vm = vm::VM::new();
-        vm.run(args.get(1).as_slice());
+        vm.run(args[1].as_slice());
     }
 }

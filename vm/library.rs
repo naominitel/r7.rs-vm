@@ -2,7 +2,6 @@ use gc;
 use gc::Env;
 use std::io;
 use std::slice::Items;
-use std::vec;
 
 static DEFAULT_PREFIX: &'static str = "/usr/local/";
 
@@ -44,7 +43,7 @@ impl Library {
     pub fn library_path(prefix: Option<String>) -> Vec<Box<Path>> {
         let prfx = match prefix {
             Some(s) => box Path::new(s),
-            None => box Path::new(DEFAULT_PREFIX.into_owned())
+            None => box Path::new(DEFAULT_PREFIX.into_string())
         };
 
         vec!(prfx)
@@ -58,21 +57,21 @@ impl Library {
         };
 
         let mut magic = [0, .. 3];
-        f.read(magic.mut_slice_from(0));
+        let _ = f.read(magic.mut_slice_from(0));
 
         if f.read_u8().unwrap() != 0x01 {
             fail!("Unsupported file format version.");
         }
 
         // reserved
-        f.seek(28, io::SeekCur);
+        let _ = f.seek(28, io::SeekCur);
 
         let sym_tab_off = f.read_be_u64().unwrap();
         let imports_off = f.read_be_u64().unwrap();
         let exports_off = f.read_be_u64().unwrap();
         let text_off = f.read_be_u64().unwrap();
 
-        f.seek(imports_off as i64, io::SeekSet);
+        let _ = f.seek(imports_off as i64, io::SeekSet);
         let imports_count = f.read_be_u64().unwrap();
 
         let mut imports = Vec::with_capacity(imports_count as uint);
@@ -96,7 +95,7 @@ impl Library {
             imports.push(box LibName(lname));
         }
 
-        f.seek(sym_tab_off as i64, io::SeekSet);
+        let _ = f.seek(sym_tab_off as i64, io::SeekSet);
         let sym_count = f.read_be_u64().unwrap();
         let mut mod_symt = Vec::with_capacity(sym_count as uint);
         debug!("{:u} symbols in table", sym_count);
@@ -114,7 +113,7 @@ impl Library {
             mod_symt.push(h);
         }
 
-        f.seek(exports_off as i64, io::SeekSet);
+        let _ = f.seek(exports_off as i64, io::SeekSet);
         let exports_count = f.read_be_u64().unwrap();
 
         let env = gc.alloc(Env {
@@ -123,7 +122,7 @@ impl Library {
         });
 
         debug!("Trying to access program text section at {:x}", text_off);
-        f.seek(text_off as i64, io::SeekSet);
+        let _ = f.seek(text_off as i64, io::SeekSet);
         let text_size = f.read_be_u64().unwrap();
         let mut text = Vec::with_capacity(text_size as uint);
 

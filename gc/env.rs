@@ -45,10 +45,7 @@ impl Env {
         }
 
         match self.next {
-            Some(mut e) => unsafe {
-                (*e).store(value, addr - self.values.capacity() as u64)
-            },
-
+            Some(mut e) => e.store(value, addr - self.values.capacity() as u64),
             None => fail!("Value not in environment")
         }
     }
@@ -56,7 +53,7 @@ impl Env {
     pub fn fetch(&mut self, addr: u64) -> gc::value::Value {
         if addr < self.values.capacity() as u64 {
             if addr < self.values.len() as u64 {
-                let &(d, ref v) = self.values.get(addr as uint);
+                let &(d, ref v) = &self.values[addr as uint];
 
                 if d {
                     v.clone()
@@ -69,9 +66,7 @@ impl Env {
         }
 
         else { match self.next {
-            Some(mut e) => unsafe {
-                (*e).fetch(addr - self.values.capacity() as u64)
-            },
+            Some(mut e) => e.fetch(addr - self.values.capacity() as u64),
 
             None => fail!("Value not in environment")
         }}
@@ -92,7 +87,7 @@ impl Env {
         match self.next {
             Some(mut e) => {
                 print!(" => ");
-                unsafe { (*e).dump() };
+                e.dump();
             }
 
             None => debug!(" End.")

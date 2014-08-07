@@ -66,7 +66,7 @@ impl<T> DerefMut<T> for Ptr<T> {
 
 impl<T: fmt::Show> fmt::Show for Ptr<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let &Ptr(mut ptr) = self;
+        let &Ptr(ptr) = self;
         unsafe { (*ptr).data.fmt(fmt) }
     }
 }

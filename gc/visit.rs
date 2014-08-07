@@ -1,9 +1,3 @@
-use gc;
-use gc::env::Env;
-use gc::pair::Pair;
-use gc::ptr::Ptr;
-use gc::string::String;
-use gc::Closure;
 use gc::value;
 use vm::Frame;
 use vm::Stack;
