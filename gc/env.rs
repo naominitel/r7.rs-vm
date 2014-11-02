@@ -11,7 +11,7 @@ pub struct Env {
 
 impl gc::visit::Visitor for Env {
     fn visit(&mut self, m: bool) {
-        for &(d, ref mut v) in self.values.mut_iter() {
+        for &(d, ref mut v) in self.values.iter_mut() {
             if d { v.visit(m) };
         }
 
@@ -46,7 +46,7 @@ impl Env {
 
         match self.next {
             Some(mut e) => e.store(value, addr - self.values.capacity() as u64),
-            None => fail!("Value not in environment")
+            None => panic!("Value not in environment")
         }
     }
 
@@ -59,16 +59,16 @@ impl Env {
                     v.clone()
                 }
 
-                else { fail!("Reference to an identifier before its definition") }
+                else { panic!("Reference to an identifier before its definition") }
             }
 
-            else { fail!("Reference to an identifier before its definition") }
+            else { panic!("Reference to an identifier before its definition") }
         }
 
         else { match self.next {
             Some(mut e) => e.fetch(addr - self.values.capacity() as u64),
 
-            None => fail!("Value not in environment")
+            None => panic!("Value not in environment")
         }}
     }
 
@@ -79,7 +79,7 @@ impl Env {
         print!("[ ");
 
         for i in self.values.iter() {
-            debug!("{:?} ", i);
+            debug!("{} ", i);
         }
 
         print!("]");

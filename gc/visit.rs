@@ -33,7 +33,7 @@ impl Visitor for value::Value {
 
 impl Visitor for Stack {
     fn visit(&mut self, m: bool) {
-        for v in self.mut_iter() {
+        for v in self.iter_mut() {
             v.visit(m);
         }
     }

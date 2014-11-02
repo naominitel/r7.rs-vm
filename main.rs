@@ -4,7 +4,6 @@
 #![deny(non_uppercase_statics)]
 #![feature(phase)]
 
-extern crate debug;
 extern crate gmp;
 
 #[phase(plugin, link)]
@@ -18,7 +17,7 @@ mod vm;
 fn main() {
     let args = ::std::os::args();
     if args.len() < 2 {
-        fail!("usage: {:s} <program>", args.get(0).as_slice());
+        panic!("usage: {:s} <program>", args[0]);
     }
 
     else {

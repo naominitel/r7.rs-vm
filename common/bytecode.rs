@@ -1,5 +1,6 @@
 #[repr(u8)]
 #[allow(dead_code)]
+#[deriving(Show)]
 pub enum Opcode {
     Nop    = 0x00,
     Push   = 0x01,

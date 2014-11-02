@@ -27,7 +27,7 @@ pub fn list(argv: Arguments) -> Value {
 pub fn is_list(argv: Arguments) -> Value {
     match argv.vec() {
         [ref v] => Bool(list::is_list(v)),
-        _ => fail!("Wrong number of arguments")
+        _ => panic!("Wrong number of arguments")
     }
 
 }
@@ -35,13 +35,13 @@ pub fn is_list(argv: Arguments) -> Value {
 pub fn map(argv: Arguments) -> Value {
     let (fun, lst) = match argv.vec() {
         [ref fun, ref lst] => (fun.clone(), lst.clone()),
-        _ => fail!("Wrong number of arguments")
+        _ => panic!("Wrong number of arguments")
     };
 
     let mut builder = list::LIST_BUILDER.clone();
     builder.init();
 
-    for v in list::iter(&lst, |_| fail!("Error: expected a pair")) {
+    for v in list::iter(&lst, |_| panic!("Error: expected a pair")) {
         // function calls requires arguments to be placed
         // on-stack before passing control to the function
         argv.vm.stack.push(v);
@@ -55,13 +55,13 @@ pub fn map(argv: Arguments) -> Value {
 pub fn filter(argv: Arguments) -> Value {
     let (fun, lst) = match argv.vec() {
         [ref fun, ref lst] => (fun.clone(), lst.clone()),
-        _ => fail!("Wrong number of arguments")
+        _ => panic!("Wrong number of arguments")
     };
 
     let mut builder = list::LIST_BUILDER.clone();
     builder.init();
 
-    for v in list::iter(&lst, |_| fail!("Error: expected a pair")) {
+    for v in list::iter(&lst, |_| panic!("Error: expected a pair")) {
         argv.vm.stack.push(v.clone());
         let ret = argv.vm.fun_call_ret(&fun, 1);
 

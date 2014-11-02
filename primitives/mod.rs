@@ -118,7 +118,7 @@ impl<'a> Index<u8, gc::Value> for Arguments<'a> {
     #[inline(always)]
     fn index<'a>(&'a self, index: &u8) -> &'a gc::Value {
         // first arguments are at the top of the stack
-        if self.argc == *index { fail!("waaaat") };
+        if self.argc == *index { panic!("waaaat") };
         let idx = self.vm.stack.len() - self.argc as uint + *index as uint;
         &self.vm.stack[idx]
     }

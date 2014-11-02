@@ -74,7 +74,7 @@ impl VM {
                 ::std::mem::swap(f, &mut nframe);
             }
 
-            None => fail!()
+            None => panic!()
         }
 
         ::std::mem::swap(&mut self.frame, &mut nframe);
@@ -264,7 +264,7 @@ impl VM {
 
         if variadic {
             if argc < arity {
-                fail!("Wrong number of arguments");
+                panic!("Wrong number of arguments");
             }
 
             let mut env = self.gc.alloc(gc::Env {
@@ -291,7 +291,7 @@ impl VM {
 
         else {
             if argc != arity {
-                fail!("Wrong number of arguments");
+                panic!("Wrong number of arguments");
             }
 
             let mut env = self.gc.alloc(gc::Env {
@@ -335,7 +335,7 @@ impl VM {
                 let ret = self.prim_call(prim, argc);
                 self.stack.push(ret);
             }
-            _ => fail!("Attempting to call a non-function value")
+            _ => panic!("Attempting to call a non-function value")
         }
     }
 
@@ -365,13 +365,13 @@ impl VM {
                 self.stack.pop().unwrap()
             }
 
-            _ => fail!("Attempting to call a non-function value")
+            _ => panic!("Attempting to call a non-function value")
         }
     }
 
     fn exec_instr(&mut self) {
         let opcode = self.next_op();
-        debug!("Executing next instruction: {:?}", opcode);
+        debug!("Executing next instruction: {}", opcode);
 
         match opcode {
             bytecode::Alloc => {
@@ -440,7 +440,7 @@ impl VM {
                     }
 
                     bytecode::Prim => {
-                        fail!("Unimplemented");
+                        panic!("Unimplemented");
                     }
                 };
 
@@ -484,7 +484,7 @@ impl VM {
                         self.stack.push(ret);
                     }
 
-                    _ => fail!("Attempting a tail-call on a non-closure value")
+                    _ => panic!("Attempting a tail-call on a non-closure value")
                 }
             }
 
@@ -525,7 +525,7 @@ impl VM {
             // FIXME: this pattern is not *really* exhaustive because of the
             // unsafe u8 -> enum cast
             // _ => {
-            //     fail!("Unkwown bytecode instruction {:u}", opcode as u8);
+            //     panic!("Unkwown bytecode instruction {:u}", opcode as u8);
             // }
         }
     }

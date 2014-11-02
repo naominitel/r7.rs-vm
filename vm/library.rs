@@ -1,6 +1,7 @@
 use gc;
 use gc::Env;
 use std::io;
+use std::io::fs::PathExtensions;
 use std::slice::Items;
 
 static DEFAULT_PREFIX: &'static str = "/usr/local/";
@@ -53,14 +54,14 @@ impl Library {
         /* found library */
         let mut f = match io::File::open(path) {
             Ok(f) => f,
-            Err(_) => fail!("Impossible to open library file")
+            Err(_) => panic!("Impossible to open library file")
         };
 
         let mut magic = [0, .. 3];
-        let _ = f.read(magic.mut_slice_from(0));
+        let _ = f.read(magic.as_mut_slice());
 
         if f.read_u8().unwrap() != 0x01 {
-            fail!("Unsupported file format version.");
+            panic!("Unsupported file format version.");
         }
 
         // reserved
@@ -86,7 +87,7 @@ impl Library {
 
                 for _ in range(0, size) {
                     let ch = f.read_u8().unwrap();
-                    part.push_char(ch as char);
+                    part.push(ch as char);
                 }
 
                 lname.push(part);
@@ -106,7 +107,7 @@ impl Library {
 
             for _ in range(0, sz) {
                 let b = f.read_u8().unwrap();
-                s.push_char(b as char);
+                s.push(b as char);
             }
 
             let h = gc.intern(s);
@@ -141,7 +142,7 @@ impl Library {
     pub fn load(gc: &mut ::gc::GC, name: &LibName, lpath: Vec<Box<Path>>) -> Box<Library> {
         let mut lpath = lpath;
 
-        for p in lpath.mut_iter() {
+        for p in lpath.iter_mut() {
             for part in name.iter() {
                 p.push(part.as_slice());
             }
@@ -152,6 +153,6 @@ impl Library {
             }
         }
 
-        fail!("Impossible to find library in path");
+        panic!("Impossible to find library in path");
     }
 }

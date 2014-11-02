@@ -32,7 +32,7 @@ impl<T> Collected for gc::ptr::Cell<T> {
 // ptr to the same object
 
 pub struct GC {
-    heap: Box<list::List<Box<Collected>>>,
+    heap: Box<list::List<Box<Collected + 'static>>>,
 
     // string interner
     // keeps in memory all the string constants loaded by the program.
@@ -55,7 +55,7 @@ impl GC {
     }
 
     fn mark(&mut self, roots: &mut [&mut Visitor]) {
-        for v in roots.mut_iter() {
+        for v in roots.iter_mut() {
             v.visit(self.current_mark);
         }
     }

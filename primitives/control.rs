@@ -5,13 +5,13 @@ use primitives::Arguments;
 
 pub fn exit(_: Arguments) -> Value {
     // FIXME: handle exit value
-    fail!()
+    panic!()
 }
 
 pub fn assert(argv: Arguments) -> Value {
     match argv.vec() {
         [Bool(true)] => Unit,
-        [_] => fail!("Assertion failed"),
-        _ => fail!("Wrong number of arguments")
+        [_] => panic!("Assertion failed"),
+        _ => panic!("Wrong number of arguments")
     }
 }
