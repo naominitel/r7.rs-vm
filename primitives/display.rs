@@ -1,13 +1,11 @@
-use gc::Value;
-use gc::value::Unit;
-use primitives::Arguments;
+use gc;
 
-pub fn display(argv: Arguments) -> Value {
+pub fn display(argv: super::Arguments) -> gc::Value {
     print!("{:s}", argv[0].to_string());
-    Unit
+    gc::value::Unit
 }
 
-pub fn newline(_: Arguments) -> Value {
+pub fn newline(_: super::Arguments) -> gc::Value {
     print!("\n");
-    Unit
+    gc::value::Unit
 }

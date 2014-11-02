@@ -1,5 +1,5 @@
-use gc;
 use std::fmt;
+use gc;
 
 // an abstraction for GC'd pointers
 

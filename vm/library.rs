@@ -1,8 +1,8 @@
-use gc;
-use gc::Env;
 use std::io;
 use std::io::fs::PathExtensions;
 use std::slice::Items;
+
+use gc;
 
 static DEFAULT_PREFIX: &'static str = "/usr/local/";
 
@@ -33,7 +33,7 @@ impl LibName {
 pub struct Library {
     pub name: Box<LibName>,
     pub prog: Vec<u8>,
-    pub env: gc::Ptr<Env>,
+    pub env: gc::Ptr<gc::Env>,
 
     pub imports: Vec<Box<LibName>>,
     pub sym_table: Vec<gc::Ptr<gc::String>>,
@@ -117,7 +117,7 @@ impl Library {
         let _ = f.seek(exports_off as i64, io::SeekSet);
         let exports_count = f.read_be_u64().unwrap();
 
-        let env = gc.alloc(Env {
+        let env = gc.alloc(gc::Env {
             values: Vec::with_capacity(exports_count as uint),
             next: None
         });

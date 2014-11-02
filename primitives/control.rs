@@ -1,16 +1,13 @@
-use gc::Value;
-use gc::value::Bool;
-use gc::value::Unit;
-use primitives::Arguments;
+use gc;
 
-pub fn exit(_: Arguments) -> Value {
+pub fn exit(_: super::Arguments) -> gc::Value {
     // FIXME: handle exit value
     panic!()
 }
 
-pub fn assert(argv: Arguments) -> Value {
+pub fn assert(argv: super::Arguments) -> gc::Value {
     match argv.vec() {
-        [Bool(true)] => Unit,
+        [gc::value::Bool(true)] => gc::value::Unit,
         [_] => panic!("Assertion failed"),
         _ => panic!("Wrong number of arguments")
     }

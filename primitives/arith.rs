@@ -1,61 +1,60 @@
-use gc::Value;
-use gc::value::Num;
-use gmp::Mpz;
-use primitives::Arguments;
-use std::num::One;
-use std::num::Zero;
+use std::num;
 
-pub fn add(argv: Arguments) -> Value {
-    let mut res: Mpz = Zero::zero();
+use gc;
+use gc::value;
+use gmp;
+
+pub fn add(argv: super::Arguments) -> gc::Value {
+    let mut res: gmp::Mpz = num::Zero::zero();
 
     for i in range(0, argv.len()) {
         match &argv[i] {
-            &Num(ref n) => res = res.add(n),
-            _ => panic!("Value is not a number")
+            &value::Num(ref n) => res = res.add(n),
+            _ => panic!("gc::Value is not a number")
         }
     }
 
-    Num(res)
+    value::Num(res)
 }
 
-pub fn min(argv: Arguments) -> Value {
+pub fn min(argv: super::Arguments) -> gc::Value {
     if argv.len() == 0 {
         panic!("No arguments")
     }
 
     match argv.vec() {
-        [Num(ref i)] => Num(-i),
-        [Num(ref i), r..] => {
+        [value::Num(ref i)] => value::Num(-i),
+        [value::Num(ref i), r..] => {
             let mut res = i.clone();
 
             for i in r.iter() {
                 match i {
-                    &Num(ref n) => res = res.sub(n),
-                    _ => panic!("Value is not a number")
+                    &value::Num(ref n) => res = res.sub(n),
+                    _ => panic!("gc::Value is not a number")
                 }
             }
 
-            Num(res)
+            value::Num(res)
         }
 
-        _ => panic!("Value is not a number")
+        _ => panic!("gc::Value is not a number")
     }
 }
 
-pub fn mul(argv: Arguments) -> Value {
-    let mut res: Mpz = One::one();
+pub fn mul(argv: super::Arguments) -> gc::Value {
+    let mut res: gmp::Mpz = num::One::one();
 
     for i in range(0, argv.len()) {
         match &argv[i] {
-            &Num(ref n) => res = res.mul(n),
-            _ => panic!("Value is not a number")
+            &value::Num(ref n) => res = res.mul(n),
+            _ => panic!("gc::Value is not a number")
         }
     }
 
-    Num(res)
+    value::Num(res)
 }
 
-pub fn div(_: Arguments) -> Value {
+pub fn div(_: super::Arguments) -> gc::Value {
     // requires exact numbers implementation
     panic!("Unimplemented")
 }

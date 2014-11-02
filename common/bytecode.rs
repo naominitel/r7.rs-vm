@@ -35,4 +35,3 @@ pub fn base(pc: u64) -> u32 {
 pub fn off(pc: u64) -> u32 {
     (pc & 0xFFFF) as u32
 }
-

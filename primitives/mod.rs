@@ -16,30 +16,6 @@ mod types;
 
 pub type Prim = fn(argv: Arguments) -> gc::Value;
 
-/*
-static env: &'static GCEnv = &GCEnv {
-    values: ~[
-        Primitive(add),
-        Primitive(min),
-        Primitive(mul),
-        Primitive(div),
-        Primitive(eq),
-        Primitive(list),
-        Primitive(cons),
-        Primitive(car),
-        Primitive(display),
-        Primitive(newline),
-        Primitive(setcar),
-        Primitive(setcdr)
-    ],
-
-    mark: false, // this env is not garbage-collected. never read
-    next: None
-};
-
-static primEnv: Env = (env as *GCEnv) as *mut GCEnv;
-*/
-
 pub fn env(gc: &mut gc::GC) -> gc::Ptr<gc::Env> {
     use gc::value::Primitive;
     gc.alloc(gc::Env {

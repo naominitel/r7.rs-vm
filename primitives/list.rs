@@ -1,13 +1,9 @@
 use gc;
-use gc::Value;
-use gc::value::Bool;
-use gc::value::Null;
-use gc::value::Pair;
+use gc::value;
 use gc::value::list;
-use primitives::Arguments;
 
-pub fn list(argv: Arguments) -> Value {
-    let mut ret = Null;
+pub fn list(argv: super::Arguments) -> gc::Value {
+    let mut ret = value::Null;
     let mut i = argv.len() as int - 1;
 
     while i >= 0 {
@@ -17,22 +13,22 @@ pub fn list(argv: Arguments) -> Value {
             cdr: ret.clone()
         });
 
-        ret = Pair(pair);
+        ret = value::Pair(pair);
         i -= 1
     }
 
     ret
 }
 
-pub fn is_list(argv: Arguments) -> Value {
+pub fn is_list(argv: super::Arguments) -> gc::Value {
     match argv.vec() {
-        [ref v] => Bool(list::is_list(v)),
+        [ref v] => value::Bool(list::is_list(v)),
         _ => panic!("Wrong number of arguments")
     }
 
 }
 
-pub fn map(argv: Arguments) -> Value {
+pub fn map(argv: super::Arguments) -> gc::Value {
     let (fun, lst) = match argv.vec() {
         [ref fun, ref lst] => (fun.clone(), lst.clone()),
         _ => panic!("Wrong number of arguments")
@@ -52,7 +48,7 @@ pub fn map(argv: Arguments) -> Value {
     builder.get_list()
 }
 
-pub fn filter(argv: Arguments) -> Value {
+pub fn filter(argv: super::Arguments) -> gc::Value {
     let (fun, lst) = match argv.vec() {
         [ref fun, ref lst] => (fun.clone(), lst.clone()),
         _ => panic!("Wrong number of arguments")
@@ -66,7 +62,7 @@ pub fn filter(argv: Arguments) -> Value {
         let ret = argv.vm.fun_call_ret(&fun, 1);
 
         match ret {
-            Bool(false) => (),
+            value::Bool(false) => (),
             _ => builder.append(&v, &mut *argv.vm.gc),
         }
     }

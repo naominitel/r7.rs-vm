@@ -18,9 +18,7 @@ fn main() {
     let args = ::std::os::args();
     if args.len() < 2 {
         panic!("usage: {:s} <program>", args[0]);
-    }
-
-    else {
+    } else {
         let mut vm = vm::VM::new();
         vm.run(args[1].as_slice());
     }

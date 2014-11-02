@@ -1,9 +1,8 @@
 pub use self::exec::VM;
 pub use self::frame::Frame;
-pub use self::stack::Stack;
 
 mod exec;
 mod frame;
 mod library;
-mod stack;
 
+pub type Stack = Vec<::gc::Value>;

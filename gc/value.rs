@@ -1,7 +1,8 @@
+use std::fmt;
+
 use gc;
 use gmp;
 use primitives;
-use std::fmt;
 
 pub mod list {
     use gc;
@@ -164,14 +165,9 @@ impl PartialEq for Value {
         use std::mem::transmute;
 
         match (self, v) {
-            (&Pair(p1), &Pair(p2)) => {
-                // eq do object-compareason
-                (p1) == (p2)
-            }
-
-            (&Closure(cl1), &Closure(cl2)) => {
-                (*cl1) == (*cl2)
-            }
+            // eq do object-compareason
+            (&Pair(p1), &Pair(p2)) => p1 == p2,
+            (&Closure(cl1), &Closure(cl2)) => *cl1 == *cl2,
 
             (&Primitive(p1, _), &Primitive(p2, _)) => {
                 let p1: *const () = unsafe { transmute(p1) };
@@ -183,10 +179,8 @@ impl PartialEq for Value {
             (&Bool(b1), &Bool(b2)) => b1 == b2,
             (&Symbol(h1), &Symbol(h2)) => (h1) == (h2),
             (&String(s1), &String(s2)) => (s1) == (s2),
-
             (&Null, &Null) => true,
             (&Unit, &Unit) => true,
-
             _ => false
         }
     }
@@ -200,9 +194,7 @@ impl Value {
                 p1.car.compare(&p2.car) && p1.cdr.compare(&p2.cdr)
             }
 
-            (&Closure(cl1), &Closure(cl2)) => {
-                (*cl1) == (*cl2)
-            }
+            (&Closure(cl1), &Closure(cl2)) => *cl1 == *cl2,
 
             (&Primitive(p1, _), &Primitive(p2, _)) => {
                 use std::mem::transmute;
@@ -223,7 +215,6 @@ impl Value {
 
             (&Null, &Null) => true,
             (&Unit, &Unit) => true,
-
             _ => false
         }
     }

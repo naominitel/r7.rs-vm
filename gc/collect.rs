@@ -1,6 +1,5 @@
-use gc;
-use gc::visit::Visitor;
 use std::collections::hashmap::HashMap;
+use gc;
 
 #[path = "list.rs"]
 mod list;
@@ -54,7 +53,7 @@ impl GC {
         }
     }
 
-    fn mark(&mut self, roots: &mut [&mut Visitor]) {
+    fn mark(&mut self, roots: &mut [&mut gc::visit::Visitor]) {
         for v in roots.iter_mut() {
             v.visit(self.current_mark);
         }
@@ -94,7 +93,7 @@ impl GC {
         GC::check_node(m, node)
     }
 
-    pub fn sweep(&mut self, roots: &mut [&mut Visitor]) {
+    pub fn sweep(&mut self, roots: &mut [&mut gc::visit::Visitor]) {
         debug!("GC: Start collection");
         self.current_mark = !self.current_mark;
         self.mark(roots);
@@ -129,12 +128,9 @@ impl GC {
             mark: self.current_mark
         };
 
-        let ptr = {
-            let r: &mut Cell<T> = &mut *cell;
-            r as *mut Cell<T>
-        };
-
+        let ptr: *mut Cell<T> = &mut *cell;
         self.heap.insert(cell as Box<Collected>);
+
         gc::Ptr(ptr)
     }
 }

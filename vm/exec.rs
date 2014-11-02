@@ -1,3 +1,7 @@
+use std::collections::hashmap::HashMap;
+use std::io::Reader;
+use std::num::FromPrimitive;
+
 use common::bytecode;
 use common::bytecode::base;
 use common::bytecode::off;
@@ -8,13 +12,10 @@ use gc::GC;
 use gc::Ptr;
 use gc::value;
 use primitives;
-use std::collections::hashmap::HashMap;
-use std::io::Reader;
-use std::num::FromPrimitive;
 use vm::frame::Frame;
 use vm::library::Library;
 use vm::library::LibName;
-use vm::stack::Stack;
+use vm::Stack;
 
 pub struct VM {
     pub frame: Box<Frame>,

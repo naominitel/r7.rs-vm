@@ -25,15 +25,12 @@ impl gc::visit::Visitor for Env {
 impl Env {
     pub fn store(&mut self, value: &gc::value::Value, addr: u64) {
         if addr < self.values.capacity() as u64 {
-            if addr < self.values.len() as u64 {
+            let len = self.values.len() as u64;
+            if addr < len {
                 *self.values.get_mut(addr as uint) = (true, value.clone());
-            }
-
-            else if addr == self.values.len() as u64 {
+            } else if addr == len {
                 self.values.push((true, value.clone()));
-            }
-
-            else {
+            } else {
                 for _ in range(self.values.len() as u64, addr - 1) {
                     self.values.push((false, gc::value::Unit));
                 }
@@ -55,24 +52,20 @@ impl Env {
             if addr < self.values.len() as u64 {
                 let &(d, ref v) = &self.values[addr as uint];
 
-                if d {
-                    v.clone()
-                }
-
+                if d { v.clone() }
                 else { panic!("Reference to an identifier before its definition") }
             }
 
             else { panic!("Reference to an identifier before its definition") }
+        } else {
+            match self.next {
+                Some(mut e) => e.fetch(addr - self.values.capacity() as u64),
+                None => panic!("Value not in environment")
+            }
         }
-
-        else { match self.next {
-            Some(mut e) => e.fetch(addr - self.values.capacity() as u64),
-
-            None => panic!("Value not in environment")
-        }}
     }
 
-    // dump he environment for debugging purposes
+    // dump the environment for debugging purposes
 
     #[allow(dead_code)]
     pub fn dump(&mut self) {
@@ -94,4 +87,3 @@ impl Env {
         }
     }
 }
-

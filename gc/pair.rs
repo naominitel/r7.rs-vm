@@ -1,5 +1,5 @@
-use gc;
 use std::fmt;
+use gc;
 
 // a garbage-collected Scheme pair
 

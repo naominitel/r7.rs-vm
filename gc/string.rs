@@ -1,11 +1,10 @@
-use std::string::String as RString;
 use std::fmt;
 
 // a garbage-collected Scheme string
 
 #[packed]
 pub struct String {
-    pub str: RString,
+    pub str: ::std::string::String,
     pub mutable: bool
 }
 

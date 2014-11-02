@@ -1,36 +1,34 @@
-use gc::Value;
-use gc::value::Bool;
-use gc::value::Num;
-use primitives::Arguments;
+use gc;
+use gc::value;
 
-pub fn cmp(argv: Arguments) -> Value {
+pub fn cmp(argv: super::Arguments) -> gc::Value {
     match argv.vec() {
-        [Num(ref v), r..] => {
+        [value::Num(ref v), r..] => {
             for i in r.iter() {
                 match i {
-                    &Num(ref v2) if *v2 == *v => (),
-                    &Num(_) => return Bool(false),
+                    &value::Num(ref v2) if *v2 == *v => (),
+                    &value::Num(_) => return value::Bool(false),
                     _ => panic!("Bad argument")
                 }
             }
 
-            Bool(true)
+            value::Bool(true)
         }
 
         _ => panic!("Bad argument")
     }
 }
 
-pub fn eq(argv: Arguments) -> Value {
+pub fn eq(argv: super::Arguments) -> gc::Value {
     match argv.vec() {
-        [ref v1, ref v2] => Bool(v1 == v2),
+        [ref v1, ref v2] => value::Bool(v1 == v2),
         _ => panic!("Wrong number of arguments")
     }
 }
 
-pub fn equal(argv: Arguments) -> Value {
+pub fn equal(argv: super::Arguments) -> gc::Value {
     match argv.vec() {
-        [ref v1, ref v2] => Bool(v1.compare(v2)),
+        [ref v1, ref v2] => value::Bool(v1.compare(v2)),
         _ => panic!("Wrong number of arguments")
     }
 }
