@@ -22,7 +22,7 @@ impl fmt::Show for Pair {
         let car = self.car.to_string();
 
         match self.cdr {
-            gc::value::Pair(mut p) => fmt.pad(
+            gc::value::Pair(p) => fmt.pad(
                 format!("{:s} {:s}", car, (*p).to_string()).as_slice()
             ),
 

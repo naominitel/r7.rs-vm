@@ -13,14 +13,14 @@ pub fn cons(argv: super::Arguments) -> gc::Value {
 
 pub fn car(argv: super::Arguments) -> gc::Value {
     match argv.vec() {
-        [value::Pair(mut p)] => p.car.clone(),
+        [value::Pair(p)] => p.car.clone(),
         _ => panic!("Bad argument")
     }
 }
 
 pub fn cdr(argv: super::Arguments) -> gc::Value {
     match argv.vec() {
-        [value::Pair(mut p)] => p.cdr.clone(),
+        [value::Pair(p)] => p.cdr.clone(),
         _ => panic!("Bad arguments")
     }
 }

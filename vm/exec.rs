@@ -227,7 +227,7 @@ impl VM {
             let mut i = 0;
 
             // FIXME: why is this neccessary?
-            let mut e = l.env;
+            let e = l.env;
 
             for &(_, ref e) in e.values.iter() {
                 nenv.store(e, i);

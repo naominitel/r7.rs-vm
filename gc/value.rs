@@ -190,7 +190,7 @@ impl Value {
     // structural compareason
     pub fn compare(&self, other: &Value) -> bool {
         match (self, other) {
-            (&Pair(mut p1), &Pair(p2)) => {
+            (&Pair(p1), &Pair(p2)) => {
                 p1.car.compare(&p2.car) && p1.cdr.compare(&p2.cdr)
             }
 
@@ -207,7 +207,7 @@ impl Value {
             (&Bool(b1), &Bool(b2)) => b1 == b2,
             (&Symbol(h1), &Symbol(h2)) => (h1) == (h2),
 
-            (&String(mut s1), &String(mut s2)) => {
+            (&String(s1), &String(s2)) => {
                 let s1 = s1.str.as_slice();
                 let s2 = s2.str.as_slice();
                 s1 == s2

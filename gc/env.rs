@@ -27,7 +27,7 @@ impl Env {
         if addr < self.values.capacity() as u64 {
             let len = self.values.len() as u64;
             if addr < len {
-                *self.values.get_mut(addr as uint) = (true, value.clone());
+                self.values[addr as uint] = (true, value.clone());
             } else if addr == len {
                 self.values.push((true, value.clone()));
             } else {

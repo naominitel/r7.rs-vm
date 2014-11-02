@@ -1,7 +1,7 @@
 #![crate_name = "scmrun"]
-#![deny(unnecessary_qualification)]
 #![deny(non_camel_case_types)]
-#![deny(non_uppercase_statics)]
+#![deny(non_upper_case_globals)]
+#![deny(unused_qualifications)]
 #![feature(phase)]
 
 extern crate gmp;
