@@ -1,3 +1,6 @@
+Cargo.lock
 /scmrun
 /envgen
 /*.dSYM
+target/
+/*.rlib
