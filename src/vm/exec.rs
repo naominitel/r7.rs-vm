@@ -1,4 +1,4 @@
-use std::collections::hashmap::HashMap;
+use std::collections::HashMap;
 use std::io::Reader;
 use std::num::FromPrimitive;
 
@@ -398,7 +398,7 @@ impl VM {
                 let val = match ty {
                     bytecode::Unit => {
                         value::Unit
-                    } 
+                    }
 
                     bytecode::Bool => {
                         let i = self.read_u8();
