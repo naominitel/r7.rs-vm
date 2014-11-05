@@ -1,0 +1,25 @@
+[package]
+name = "scmrun"
+version = "0.0.1"
+authors = ["Naomi Nitel <naominitel@gmail.com>"]
+homepage = "https://github.com/Naominitel/r7.rs-vm"
+repository = "https://github.com/Naominitel/r7.rs-vm"
+readme = "./README.md"
+
+[profile.dev]
+opt-level = 0
+debug = true
+rpath = false
+
+[profile.doc]
+opt-level = 0
+debug = true
+rpath = false
+
+[profile.test]
+opt-level = 0
+debug = true
+rpath = false
+
+[dependencies.rust-gmp]
+git = "https://github.com/Naominitel/rust-gmp"

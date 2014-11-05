@@ -1,9 +1,3 @@
+language: rust
 before_install:
-    - yes | sudo add-apt-repository ppa:hansjorg/rust
-    - sudo apt-get update
-install:
-    - sudo apt-get install rust-nightly
     - sudo apt-get install libgmp3-dev
-script:
-    - rustc rust-gmp/gmp.rs `pkg-config --libs gmp`
-    - rustc main.rs -L.
