@@ -1,3 +1,0 @@
-[submodule "rust-gmp"]
-	path = rust-gmp
-	url = https://github.com/naominitel/rust-gmp
