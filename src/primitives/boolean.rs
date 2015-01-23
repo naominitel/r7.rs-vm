@@ -3,7 +3,7 @@ use gc::value;
 
 pub fn cmp(argv: super::Arguments) -> gc::Value {
     match argv.vec() {
-        [value::Num(ref v), r..] => {
+        [value::Num(ref v), ref r ..] => {
             for i in r.iter() {
                 match i {
                     &value::Num(ref v2) if *v2 == *v => (),

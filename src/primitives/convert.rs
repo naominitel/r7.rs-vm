@@ -15,5 +15,5 @@ pub fn string_to_symbol(argv: super::Arguments) -> gc::Value {
         _ => panic!("Wrong number of parameters")
     };
 
-    gc::value::Symbol(argv.vm.gc.intern(from_str(sym.as_slice()).unwrap()))
+    gc::value::Symbol(argv.vm.gc.intern(String::from_str(&sym[])))
 }

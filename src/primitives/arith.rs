@@ -1,15 +1,13 @@
-use std::num;
-
 use gc;
 use gc::value;
 use gmp;
 
 pub fn add(argv: super::Arguments) -> gc::Value {
-    let mut res: gmp::Mpz = num::Zero::zero();
+    let mut res = gmp::Mpz::zero();
 
     for i in range(0, argv.len()) {
         match &argv[i] {
-            &value::Num(ref n) => res = res.add(n),
+            &value::Num(ref n) => res = &res + n,
             _ => panic!("gc::Value is not a number")
         }
     }
@@ -24,12 +22,12 @@ pub fn min(argv: super::Arguments) -> gc::Value {
 
     match argv.vec() {
         [value::Num(ref i)] => value::Num(-i),
-        [value::Num(ref i), r..] => {
+        [value::Num(ref i), ref r ..] => {
             let mut res = i.clone();
 
             for i in r.iter() {
                 match i {
-                    &value::Num(ref n) => res = res.sub(n),
+                    &value::Num(ref n) => res = &res - n,
                     _ => panic!("gc::Value is not a number")
                 }
             }
@@ -42,11 +40,11 @@ pub fn min(argv: super::Arguments) -> gc::Value {
 }
 
 pub fn mul(argv: super::Arguments) -> gc::Value {
-    let mut res: gmp::Mpz = num::One::one();
+    let mut res = gmp::Mpz::one();
 
     for i in range(0, argv.len()) {
         match &argv[i] {
-            &value::Num(ref n) => res = res.mul(n),
+            &value::Num(ref n) => res = &res * n,
             _ => panic!("gc::Value is not a number")
         }
     }

@@ -1,6 +1,10 @@
+pub use self::Opcode::*;
+pub use self::Type::*;
+
 #[repr(u8)]
 #[allow(dead_code)]
-#[deriving(Show)]
+#[allow(unused_qualifications)]
+#[derive(Show)]
 pub enum Opcode {
     Nop    = 0x00,
     Push   = 0x01,

@@ -25,18 +25,18 @@ pub fn cdr(argv: super::Arguments) -> gc::Value {
     }
 }
 
-pub fn setcar(argv: super::Arguments) -> gc::Value {
-    match argv.vec() {
-        [value::Pair(mut p), ref v] => p.car = v.clone(),
+pub fn setcar(mut argv: super::Arguments) -> gc::Value {
+    match argv.vec_mut() {
+        [value::Pair(ref mut p), ref v] => p.car = v.clone(),
         _ => panic!("Attempting to setcar! on a non-pair value")
     }
 
     value::Unit
 }
 
-pub fn setcdr(argv: super::Arguments) -> gc::Value {
-    match argv.vec() {
-        [value::Pair(mut p), ref v] => p.cdr = v.clone(),
+pub fn setcdr(mut argv: super::Arguments) -> gc::Value {
+    match argv.vec_mut() {
+        [value::Pair(ref mut p), ref v] => p.cdr = v.clone(),
         _ => panic!("Attempting to setcdr! on a non-pair value")
     }
 

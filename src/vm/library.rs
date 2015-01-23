@@ -1,16 +1,16 @@
 use std::io;
 use std::io::fs::PathExtensions;
-use std::slice::Items;
+use std::slice::Iter;
 
 use gc;
 
 static DEFAULT_PREFIX: &'static str = "/usr/local/";
 
-#[deriving(Eq, Clone, Hash, PartialEq)]
+#[derive(Eq, Clone, Hash, PartialEq)]
 pub struct LibName(pub Vec<String>);
 
 impl LibName {
-    fn iter<'a>(&'a self) -> Items<'a, String> {
+    fn iter<'a>(&'a self) -> Iter<'a, String> {
         let &LibName(ref vec) = self;
         vec.iter()
     }
@@ -43,8 +43,8 @@ pub struct Library {
 impl Library {
     pub fn library_path(prefix: Option<String>) -> Vec<Box<Path>> {
         let prfx = match prefix {
-            Some(s) => box Path::new(s),
-            None => box Path::new(DEFAULT_PREFIX.into_string())
+            Some(s) => Box::new(Path::new(s)),
+            None => Box::new(Path::new(DEFAULT_PREFIX.to_string()))
         };
 
         vec!(prfx)
@@ -57,7 +57,7 @@ impl Library {
             Err(_) => panic!("Impossible to open library file")
         };
 
-        let mut magic = [0, .. 3];
+        let mut magic = [0; 3];
         let _ = f.read(magic.as_mut_slice());
 
         if f.read_u8().unwrap() != 0x01 {
@@ -75,11 +75,11 @@ impl Library {
         let _ = f.seek(imports_off as i64, io::SeekSet);
         let imports_count = f.read_be_u64().unwrap();
 
-        let mut imports = Vec::with_capacity(imports_count as uint);
+        let mut imports = Vec::with_capacity(imports_count as usize);
         for _ in range(0, imports_count) {
             // read libname
             let length = f.read_be_u64().unwrap();
-            let mut lname = Vec::with_capacity(length as uint);
+            let mut lname = Vec::with_capacity(length as usize);
 
             for _ in range(0, length) {
                 let size = f.read_be_u64().unwrap();
@@ -93,13 +93,13 @@ impl Library {
                 lname.push(part);
             }
 
-            imports.push(box LibName(lname));
+            imports.push(Box::new(LibName(lname)));
         }
 
         let _ = f.seek(sym_tab_off as i64, io::SeekSet);
         let sym_count = f.read_be_u64().unwrap();
-        let mut mod_symt = Vec::with_capacity(sym_count as uint);
-        debug!("{:u} symbols in table", sym_count);
+        let mut mod_symt = Vec::with_capacity(sym_count as usize);
+        debug!("{} symbols in table", sym_count);
 
         for _ in range(0, sym_count) {
             let sz = f.read_be_u64().unwrap();
@@ -118,14 +118,14 @@ impl Library {
         let exports_count = f.read_be_u64().unwrap();
 
         let env = gc.alloc(gc::Env {
-            values: Vec::with_capacity(exports_count as uint),
+            values: Vec::with_capacity(exports_count as usize),
             next: None
         });
 
         debug!("Trying to access program text section at {:x}", text_off);
         let _ = f.seek(text_off as i64, io::SeekSet);
         let text_size = f.read_be_u64().unwrap();
-        let mut text = Vec::with_capacity(text_size as uint);
+        let mut text = Vec::with_capacity(text_size as usize);
 
         for _ in range(0, text_size) {
             let b = f.read_u8().unwrap();
@@ -133,10 +133,10 @@ impl Library {
         }
 
         debug!("Sucessfully loaded library");
-        box Library {
+        Box::new(Library {
             env: env, prog: text, name: name, sym_table: mod_symt,
             imports: imports, exports: exports_count
-        }
+        })
     }
 
     pub fn load(gc: &mut ::gc::GC, name: &LibName, lpath: Vec<Box<Path>>) -> Box<Library> {
@@ -144,12 +144,12 @@ impl Library {
 
         for p in lpath.iter_mut() {
             for part in name.iter() {
-                p.push(part.as_slice());
+                p.push(&part[]);
             }
 
             if p.is_file() {
-                debug!("Trying {:s}", p.display().to_string());
-                Library::load_file(gc, &**p, box name.clone());
+                debug!("Trying {}", p.display().to_string());
+                Library::load_file(gc, &**p, Box::new(name.clone()));
             }
         }
 

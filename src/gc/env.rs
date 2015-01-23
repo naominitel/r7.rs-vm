@@ -11,7 +11,7 @@ pub struct Env {
 
 impl gc::visit::Visitor for Env {
     fn visit(&mut self, m: bool) {
-        for &(d, ref mut v) in self.values.iter_mut() {
+        for &mut (d, ref mut v) in self.values.iter_mut() {
             if d { v.visit(m) };
         }
 
@@ -27,7 +27,7 @@ impl Env {
         if addr < self.values.capacity() as u64 {
             let len = self.values.len() as u64;
             if addr < len {
-                self.values[addr as uint] = (true, value.clone());
+                self.values[addr as usize] = (true, value.clone());
             } else if addr == len {
                 self.values.push((true, value.clone()));
             } else {
@@ -50,7 +50,7 @@ impl Env {
     pub fn fetch(&mut self, addr: u64) -> gc::value::Value {
         if addr < self.values.capacity() as u64 {
             if addr < self.values.len() as u64 {
-                let &(d, ref v) = &self.values[addr as uint];
+                let &(d, ref v) = &self.values[addr as usize];
 
                 if d { v.clone() }
                 else { panic!("Reference to an identifier before its definition") }
@@ -71,8 +71,8 @@ impl Env {
     pub fn dump(&mut self) {
         print!("[ ");
 
-        for i in self.values.iter() {
-            debug!("{} ", i);
+        for &(b, ref i) in self.values.iter() {
+            debug!("({}, {}) ", b, *i);
         }
 
         print!("]");

@@ -22,11 +22,11 @@ pub struct VM {
     pub stack: Stack,
     pub gc: Box<GC>,
 
-    pub loaded_mods: HashMap<LibName, uint>,
+    pub loaded_mods: HashMap<LibName, usize>,
     pub modules: Vec<Box<Library>>
 }
 
-fn extend_sign(val: u64, nbytes: uint) -> i64 {
+fn extend_sign(val: u64, nbytes: usize) -> i64 {
     let shift = (8 - nbytes) * 8;
     (val << shift) as i64 >> shift
 }
@@ -41,8 +41,8 @@ impl VM {
         let loaded_mods = HashMap::new();
         let mods = vec!();
 
-        box VM { frame: frame, stack: stack, gc: gc, loaded_mods: loaded_mods,
-            modules: mods }
+        Box::new(VM { frame: frame, stack: stack, gc: gc, loaded_mods: loaded_mods,
+            modules: mods })
     }
 
     #[inline(always)]
@@ -84,21 +84,21 @@ impl VM {
     #[allow(dead_code)]
     fn eof(&mut self) -> bool {
         let base = base(self.frame.pc);
-        self.modules[base as uint].prog.len() == off(self.frame.pc) as uint
+        self.modules[base as usize].prog.len() == off(self.frame.pc) as usize
     }
 
     #[allow(dead_code)]
     fn read_u8(&mut self) -> u8 {
         let base = base(self.frame.pc);
-        let lib = &self.modules[base as uint];
+        let lib = &self.modules[base as usize];
 
-        let b = lib.prog[off(self.frame.pc) as uint];
+        let b = lib.prog[off(self.frame.pc) as usize];
         self.frame.pc += 1;
         b
     }
 
     #[allow(dead_code)]
-    fn read_le_uint_n(&mut self, nbytes: uint) -> u64 {
+    fn read_le_uint_n(&mut self, nbytes: usize) -> u64 {
         assert!(nbytes > 0 && nbytes <= 8);
 
         let mut val = 0u64;
@@ -113,12 +113,12 @@ impl VM {
     }
 
     #[allow(dead_code)]
-    fn read_le_int_n(&mut self, nbytes: uint) -> i64 {
+    fn read_le_int_n(&mut self, nbytes: usize) -> i64 {
         extend_sign(self.read_le_uint_n(nbytes), nbytes)
     }
 
     #[allow(dead_code)]
-    fn read_be_uint_n(&mut self, nbytes: uint) -> u64 {
+    fn read_be_uint_n(&mut self, nbytes: usize) -> u64 {
         assert!(nbytes > 0 && nbytes <= 8);
 
         let mut val = 0u64;
@@ -131,7 +131,7 @@ impl VM {
     }
 
     #[allow(dead_code)]
-    fn read_be_int_n(&mut self, nbytes: uint) -> i64 {
+    fn read_be_int_n(&mut self, nbytes: usize) -> i64 {
         extend_sign(self.read_be_uint_n(nbytes), nbytes)
     }
 
@@ -198,7 +198,7 @@ impl VM {
     pub fn run(&mut self, prog: &str) {
         let p = Path::new(prog);
         let name = vec!(String::from_str("main"));
-        let l = Library::load_file(&mut *self.gc, &p, box LibName(name));
+        let l = Library::load_file(&mut *self.gc, &p, Box::new(LibName(name)));
         self.load_module(l);
     }
 
@@ -207,20 +207,19 @@ impl VM {
 
         for i in lib.imports.iter() {
             debug!("Require lib");
-            let m = self.loaded_mods.find_copy(&**i);
+            let l = match self.loaded_mods.get(&**i).map(|&x| x) {
+                None => {
+                    let l = Library::load(&mut *self.gc, &**i,
+                                          Library::library_path(None));
+                    self.load_module(l);
+                    &**self.modules.last().unwrap()
+                }
 
-            let l = if m == None {
-                let l = Library::load(&mut *self.gc, &**i, Library::library_path(None));
-                self.load_module(l);
-                &**self.modules.last().unwrap()
-            }
-
-            else {
-                &*self.modules[m.unwrap()]
+                Some(idx) => &*self.modules[idx]
             };
 
             let mut nenv = self.gc.alloc(gc::Env {
-                values: Vec::with_capacity(l.exports as uint),
+                values: Vec::with_capacity(l.exports as usize),
                 next: env
             });
 
@@ -269,17 +268,17 @@ impl VM {
             }
 
             let mut env = self.gc.alloc(gc::Env {
-                values: Vec::with_capacity(arity as uint + 1),
+                values: Vec::with_capacity(arity as usize + 1),
                 next: Some(cl.env)
             });
 
             let va_count = argc - arity;
             let va_args = self.prim_call(primitives::list, va_count);
 
-            let base = self.stack.len() - arity as uint;
+            let base = self.stack.len() - arity as usize;
 
             for i in range(0, arity) {
-                let arg = self.stack[base + i as uint].clone();
+                let arg = self.stack[base + i as usize].clone();
                 env.values.push((true, arg));
             }
 
@@ -296,14 +295,14 @@ impl VM {
             }
 
             let mut env = self.gc.alloc(gc::Env {
-                values: Vec::with_capacity(argc as uint),
+                values: Vec::with_capacity(argc as usize),
                 next: Some(cl.env)
             });
 
-            let base = self.stack.len() - argc as uint;
+            let base = self.stack.len() - argc as usize;
 
             for i in range(0, argc) {
-                let arg = self.stack[base + i as uint].clone();
+                let arg = self.stack[base + i as usize].clone();
                 env.values.push((true, arg));
             }
 
@@ -323,7 +322,7 @@ impl VM {
     #[inline(always)]
     fn prim_call(&mut self, prim: primitives::Prim, argc: u8) -> value::Value {
         let ret = prim(primitives::Arguments::new(self, argc));
-        let len = self.stack.len() - argc as uint;
+        let len = self.stack.len() - argc as usize;
         self.stack.truncate(len);
         ret
     }
@@ -372,7 +371,7 @@ impl VM {
 
     fn exec_instr(&mut self) {
         let opcode = self.next_op();
-        debug!("Executing next instruction: {}", opcode);
+        debug!("Executing next instruction: {:?}", opcode);
 
         match opcode {
             bytecode::Alloc => {
@@ -416,8 +415,8 @@ impl VM {
                     bytecode::Sym => {
                         let base = base(self.frame.pc);
                         let arg = self.read_be_u64();
-                        let lib = &self.modules[base as uint];
-                        let h = lib.sym_table[arg as uint];
+                        let lib = &self.modules[base as usize];
+                        let h = lib.sym_table[arg as usize];
                         value::Symbol(h)
                     }
 
@@ -536,10 +535,10 @@ impl VM {
 
         debug!("Begin module execution");
         let prog_len = self.modules.last().unwrap().prog.len();
-        debug!("Module section is {:u} long", prog_len);
+        debug!("Module section is {} long", prog_len);
         let mut counter = 0u16;
 
-        while (off(self.frame.pc) as uint) < prog_len {
+        while (off(self.frame.pc) as usize) < prog_len {
             self.exec_instr();
             counter += 1;
 

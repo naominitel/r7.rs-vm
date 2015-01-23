@@ -1,7 +1,7 @@
 use gc;
 
 pub fn display(argv: super::Arguments) -> gc::Value {
-    print!("{:s}", argv[0].to_string());
+    print!("{}", argv[0].to_string());
     gc::value::Unit
 }
 

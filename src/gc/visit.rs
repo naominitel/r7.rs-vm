@@ -21,8 +21,8 @@ impl Visitor for Frame {
 impl Visitor for value::Value {
     fn visit(&mut self, m: bool) {
         match self {
-            &value::Pair(ref mut pair) => { pair.visit(m); }
-            &value::Closure(ref mut cl) => { cl.visit(m); }
+            &mut value::Pair(ref mut pair) => { pair.visit(m); }
+            &mut value::Closure(ref mut cl) => { cl.visit(m); }
 
             // values other than pairs and closures
             // doesn't need to be GC'd

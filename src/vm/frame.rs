@@ -2,20 +2,20 @@ use gc;
 
 pub struct Frame {
     pub env: gc::Ptr<gc::Env>,
-    pub sp: uint,
+    pub sp: usize,
     pub pc: u64,
     pub caller: Option<Box<Frame>>
 }
 
 impl Frame {
-    pub fn new(base_env: gc::Ptr<gc::Env>, sp: uint, pc: u64) -> Box<Frame> {
-        box Frame { env: base_env, sp: sp, pc: pc, caller: None }
+    pub fn new(base_env: gc::Ptr<gc::Env>, sp: usize, pc: u64) -> Box<Frame> {
+        Box::new(Frame { env: base_env, sp: sp, pc: pc, caller: None })
     }
 
     pub fn alloc(&mut self, gc: &mut gc::GC, size: u64) {
         debug!("Allocating an env of size {:x}", size);
         let nenv = gc.alloc(gc::Env {
-            values: Vec::with_capacity(size as uint),
+            values: Vec::with_capacity(size as usize),
             next: Some(self.env)
         });
         self.env = nenv;

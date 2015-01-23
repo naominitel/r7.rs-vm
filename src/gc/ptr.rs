@@ -1,15 +1,17 @@
 use std::fmt;
+use std::ops;
 use gc;
 
 // an abstraction for GC'd pointers
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Cell<T> {
     pub data: T,
     pub mark: bool
 }
 
 pub struct Ptr<T>(pub *mut Cell<T>);
+impl<T> Copy for Ptr<T> {}
 
 // FIXME: why aren't those derivable ?
 
@@ -29,7 +31,7 @@ impl<T> Clone for Ptr<T> {
 
 impl<T: gc::visit::Visitor> gc::visit::Visitor for Ptr<T> {
     fn visit(&mut self, m: bool) {
-        let &Ptr(ptr) = self;
+        let &mut Ptr(ptr) = self;
         unsafe {
             let Cell { ref mut data, ref mut mark } = *ptr;
             if *mark != m {
@@ -40,7 +42,8 @@ impl<T: gc::visit::Visitor> gc::visit::Visitor for Ptr<T> {
     } 
 }
 
-impl<T> Deref<T> for Ptr<T> {
+impl<T> ops::Deref for Ptr<T> {
+    type Target = T;
     // should be optimized as a no-op
     #[inline(always)]
     fn deref<'a>(&'a self) -> &'a T {
@@ -52,11 +55,11 @@ impl<T> Deref<T> for Ptr<T> {
     }
 }
 
-impl<T> DerefMut<T> for Ptr<T> {
+impl<T> ops::DerefMut for Ptr<T> {
     // should be optimized as a no-op
     #[inline(always)]
     fn deref_mut<'a>(&'a mut self) -> &'a mut T {
-        let &Ptr(ptr) = self;
+        let &mut Ptr(ptr) = self;
         unsafe {
             let Cell { ref data, .. } = *ptr;
             ::std::mem::transmute(data)
@@ -64,7 +67,7 @@ impl<T> DerefMut<T> for Ptr<T> {
     }
 }
 
-impl<T: fmt::Show> fmt::Show for Ptr<T> {
+impl<T: fmt::String> fmt::String for Ptr<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let &Ptr(ptr) = self;
         unsafe { (*ptr).data.fmt(fmt) }

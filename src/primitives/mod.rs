@@ -1,3 +1,4 @@
+use std::ops;
 use gc;
 use vm;
 
@@ -85,17 +86,25 @@ impl<'a> Arguments<'a> {
     }
 
     #[inline(always)]
-    fn vec(&'a self) -> &'a [gc::Value] {
-        self.vm.stack.slice_from(self.vm.stack.len() - self.argc as uint)
+    fn vec<'b>(&'b self) -> &'b [gc::Value] {
+        self.vm.stack.slice_from(self.vm.stack.len() - self.argc as usize)
+    }
+
+    #[inline(always)]
+    fn vec_mut<'b>(&'b mut self) -> &'b mut [gc::Value] {
+        let len = self.vm.stack.len() - self.argc as usize;
+        self.vm.stack.slice_from_mut(len)
     }
 }
 
-impl<'a> Index<u8, gc::Value> for Arguments<'a> {
+impl<'a> ops::Index<u8> for Arguments<'a> {
+    type Output = gc::Value;
+
     #[inline(always)]
-    fn index<'a>(&'a self, index: &u8) -> &'a gc::Value {
+    fn index<'b>(&'b self, index: &u8) -> &'b gc::Value {
         // first arguments are at the top of the stack
         if self.argc == *index { panic!("waaaat") };
-        let idx = self.vm.stack.len() - self.argc as uint + *index as uint;
+        let idx = self.vm.stack.len() - self.argc as usize + *index as usize;
         &self.vm.stack[idx]
     }
 }

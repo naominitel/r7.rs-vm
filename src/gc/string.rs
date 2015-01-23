@@ -8,9 +8,9 @@ pub struct String {
     pub mutable: bool
 }
 
-impl fmt::Show for String {
+impl fmt::String for String {
     #[inline(always)]
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.pad(self.str.as_slice())
+        fmt.pad(&self.str[])
     }
 }

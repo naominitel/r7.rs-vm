@@ -4,6 +4,8 @@ use gc;
 use gmp;
 use primitives;
 
+pub use self::Value::*;
+
 pub mod list {
     use gc;
     use super::Null;
@@ -23,7 +25,7 @@ pub mod list {
     pub fn is_list(value: &Value) -> bool {
         let mut ret = true;
 
-        for _ in iter(value, |_| {
+        for _ in iter(value, |&mut:_| {
             // non-pair value
             ret = false;
             None
@@ -34,11 +36,13 @@ pub mod list {
 
     // utility struct for efficiently building lists iteratively
 
-    #[deriving(Clone)]
+    #[derive(Clone)]
     struct ListBuilder {
         fst: gc::ptr::Cell<gc::Pair>,
         ptr: gc::Ptr<gc::Pair>,
     }
+
+    unsafe impl Sync for ListBuilder {}
 
     pub static LIST_BUILDER: ListBuilder = ListBuilder {
         // allocate a dummy pair that will in fact point to the first
@@ -80,12 +84,14 @@ pub mod list {
     // iterates until it reaches a Null. If a non-pair or non-null value is
     // encountered, it raises the invalid_list condition
 
-    struct ListIterator<'a, 'b> {
+    struct ListIterator<'a, F> where F: FnMut(Value) -> Option<Value> {
         cur: &'a Value,
-        trap: |Value|:'b -> Option<Value>
+        trap: F
     }
 
-    impl<'a, 'b> Iterator<Value> for ListIterator<'a, 'b> {
+    impl<'a, F> Iterator for ListIterator<'a, F>
+        where F: FnMut(Value) -> Option<Value> {
+        type Item = Value;
         fn next(&mut self) -> Option<Value> {
             match self.cur {
                 &Null => None,
@@ -99,7 +105,8 @@ pub mod list {
         }
     }
 
-    pub fn iter<'a, 'b>(v: &'a Value, trap: |Value|:'b -> Option<Value>) -> ListIterator<'a, 'b> {
+    pub fn iter<'a, F>(v: &'a Value, trap: F) -> ListIterator<'a, F>
+        where F: FnMut(Value) -> Option<Value> {
         ListIterator { cur: v, trap: trap }
     }
 }
@@ -142,18 +149,18 @@ impl Clone for Value {
     }
 }
 
-impl fmt::Show for Value {
+impl fmt::String for Value {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &Bool(true) => fmt.pad("#t"),
             &Bool(false) => fmt.pad("#f"),
             &Closure(_) => fmt.pad("#<procedure>"),
             &Null => fmt.pad("'()"),
-            &Num(ref i) => fmt.pad(format!("{:s}", i.to_string()).as_slice()),
-            &Pair(p) => fmt.pad(format!("({:s})", p.to_string()).as_slice()),
+            &Num(ref i) => fmt.pad(&format!("{}", i.to_string())[]),
+            &Pair(p) => fmt.pad(&format!("({})", p.to_string())[]),
             &Primitive(_, _) => fmt.pad("#<procedure>"),
-            &String(s) => fmt.pad(format!("{:s}", s.to_string()).as_slice()),
-            &Symbol(h) => fmt.pad(format!("'{:s}", h.to_string()).as_slice()),
+            &String(s) => fmt.pad(&format!("{}", s.to_string())[]),
+            &Symbol(h) => fmt.pad(&format!("'{}", h.to_string())[]),
             &Unit => fmt.pad("")
         }
     }

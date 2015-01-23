@@ -46,11 +46,11 @@ pub struct GC {
 
 impl GC {
     pub fn new() -> Box<GC> {
-        box GC {
+        Box::new(GC {
             heap: list::List::new(),
             interner: HashMap::new(),
             current_mark: false
-        }
+        })
     }
 
     fn mark(&mut self, roots: &mut [&mut gc::visit::Visitor]) {
@@ -63,8 +63,8 @@ impl GC {
         use std::mem::swap;
 
         match node {
-            &list::Node(_, ref mut next) => {
-                let mut nnext = box list::Empty;
+            &mut list::Node(_, ref mut next) => {
+                let mut nnext = Box::new(list::Empty);
                 swap(next, &mut nnext);
 
                 if match *&mut *nnext {
@@ -104,7 +104,7 @@ impl GC {
     // if the string is already interned, just returns an handle on it
 
     pub fn intern(&mut self, s: String) -> gc::Ptr<gc::String> {
-        match self.interner.find(&s) {
+        match self.interner.get(&s) {
             Some(h) => return *h,
             None => ()
         }
@@ -123,10 +123,10 @@ impl GC {
     pub fn alloc<T: 'static>(&mut self, data: T) -> gc::Ptr<T> {
         use gc::ptr::Cell;
 
-        let mut cell = box Cell {
+        let mut cell = Box::new(Cell {
             data: data,
             mark: self.current_mark
-        };
+        });
 
         let ptr: *mut Cell<T> = &mut *cell;
         self.heap.insert(cell as Box<Collected>);

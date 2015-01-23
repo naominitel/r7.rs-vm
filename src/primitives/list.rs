@@ -4,7 +4,7 @@ use gc::value::list;
 
 pub fn list(argv: super::Arguments) -> gc::Value {
     let mut ret = value::Null;
-    let mut i = argv.len() as int - 1;
+    let mut i = argv.len() as isize - 1;
 
     while i >= 0 {
         let v = argv[i as u8].clone();
