@@ -7,6 +7,7 @@ pub use self::string::String;
 pub use self::value::Value;
 
 pub mod ptr;
+#[macro_use]
 pub mod value;
 pub mod visit;
 

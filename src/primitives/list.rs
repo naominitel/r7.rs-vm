@@ -34,9 +34,7 @@ pub fn map(argv: super::Arguments) -> gc::Value {
         _ => panic!("Wrong number of arguments")
     };
 
-    let mut builder = list::LIST_BUILDER.clone();
-    builder.init();
-
+    let mut builder = list_builder_new!();
     for v in list::iter(&lst, |_| panic!("Error: expected a pair")) {
         // function calls requires arguments to be placed
         // on-stack before passing control to the function
@@ -54,9 +52,7 @@ pub fn filter(argv: super::Arguments) -> gc::Value {
         _ => panic!("Wrong number of arguments")
     };
 
-    let mut builder = list::LIST_BUILDER.clone();
-    builder.init();
-
+    let mut builder = list_builder_new!();
     for v in list::iter(&lst, |_| panic!("Error: expected a pair")) {
         argv.vm.stack.push(v.clone());
         let ret = argv.vm.fun_call_ret(&fun, 1);

@@ -6,6 +6,7 @@ use primitives;
 
 pub use self::Value::*;
 
+#[macro_use]
 pub mod list {
     use gc;
     use super::Null;
@@ -58,6 +59,14 @@ pub mod list {
 
         ptr: gc::Ptr(0 as *mut gc::ptr::Cell<gc::Pair>)
     };
+
+    macro_rules! list_builder_new {
+        () => ({
+            let mut builder = ::gc::value::list::LIST_BUILDER.clone();
+            builder.init();
+            builder
+        })
+    }
 
     impl ListBuilder {
         #[inline(always)]

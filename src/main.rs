@@ -8,6 +8,7 @@ extern crate gmp;
 extern crate log;
 
 mod common;
+#[macro_use]
 mod gc;
 mod primitives;
 mod vm;
