@@ -1,5 +1,9 @@
+use std::fs;
 use std::io;
-use std::io::fs::PathExtensions;
+use std::io::Read;
+use std::io::Seek;
+use std::path::Path;
+use std::path::PathBuf;
 use std::slice::Iter;
 
 use gc;
@@ -40,11 +44,27 @@ pub struct Library {
     pub exports: u64
 }
 
+// WHY THE FUCK IS THIS NOT IN STDLIB
+fn read_be_u64<T>(file: &mut T) -> io::Result<u64> where T: Read {
+    let mut buf = 0u64;
+    try!(unsafe {
+        file.read_exact(::std::slice::from_raw_parts_mut(
+                &mut buf as *mut u64 as *mut u8, 8))
+    });
+    Ok(u64::from_be(buf))
+}
+
+fn read_u8<T>(file: &mut T) -> io::Result<u8> where T: Read {
+    let mut buf = [0u8];
+    try!(file.read_exact(&mut buf));
+    Ok(buf[0])
+}
+
 impl Library {
-    pub fn library_path(prefix: Option<String>) -> Vec<Box<Path>> {
+    pub fn library_path(prefix: Option<String>) -> Vec<PathBuf> {
         let prfx = match prefix {
-            Some(s) => Box::new(Path::new(s)),
-            None => Box::new(Path::new(DEFAULT_PREFIX.to_string()))
+            Some(s) => PathBuf::from(&s),
+            None => PathBuf::from(&DEFAULT_PREFIX)
         };
 
         vec!(prfx)
@@ -52,41 +72,41 @@ impl Library {
 
     pub fn load_file(gc: &mut ::gc::GC, path: &Path, name: Box<LibName>) -> Box<Library> {
         /* found library */
-        let mut f = match io::File::open(path) {
+        let mut f = match fs::File::open(path) {
             Ok(f) => f,
             Err(_) => panic!("Impossible to open library file")
         };
 
         let mut magic = [0; 3];
-        let _ = f.read(magic.as_mut_slice());
+        let _ = f.read(&mut magic);
 
-        if f.read_u8().unwrap() != 0x01 {
+        if read_u8(&mut f).unwrap() != 0x01 {
             panic!("Unsupported file format version.");
         }
 
         // reserved
-        let _ = f.seek(28, io::SeekCur);
+        let _ = f.seek(io::SeekFrom::Current(28));
 
-        let sym_tab_off = f.read_be_u64().unwrap();
-        let imports_off = f.read_be_u64().unwrap();
-        let exports_off = f.read_be_u64().unwrap();
-        let text_off = f.read_be_u64().unwrap();
+        let sym_tab_off = read_be_u64(&mut f).unwrap();
+        let imports_off = read_be_u64(&mut f).unwrap();
+        let exports_off = read_be_u64(&mut f).unwrap();
+        let text_off = read_be_u64(&mut f).unwrap();
 
-        let _ = f.seek(imports_off as i64, io::SeekSet);
-        let imports_count = f.read_be_u64().unwrap();
+        let _ = f.seek(io::SeekFrom::Start(imports_off));
+        let imports_count = read_be_u64(&mut f).unwrap();
 
         let mut imports = Vec::with_capacity(imports_count as usize);
-        for _ in range(0, imports_count) {
+        for _ in 0 .. imports_count {
             // read libname
-            let length = f.read_be_u64().unwrap();
+            let length = read_be_u64(&mut f).unwrap();
             let mut lname = Vec::with_capacity(length as usize);
 
-            for _ in range(0, length) {
-                let size = f.read_be_u64().unwrap();
-                let mut part = ::std::string::String::from_str("");
+            for _ in 0 .. length {
+                let size = read_be_u64(&mut f).unwrap();
+                let mut part = String::with_capacity(size as usize);
 
-                for _ in range(0, size) {
-                    let ch = f.read_u8().unwrap();
+                for _ in 0 .. size {
+                    let ch = read_u8(&mut f).unwrap();
                     part.push(ch as char);
                 }
 
@@ -96,17 +116,17 @@ impl Library {
             imports.push(Box::new(LibName(lname)));
         }
 
-        let _ = f.seek(sym_tab_off as i64, io::SeekSet);
-        let sym_count = f.read_be_u64().unwrap();
+        let _ = f.seek(io::SeekFrom::Start(sym_tab_off));
+        let sym_count = read_be_u64(&mut f).unwrap();
         let mut mod_symt = Vec::with_capacity(sym_count as usize);
         debug!("{} symbols in table", sym_count);
 
-        for _ in range(0, sym_count) {
-            let sz = f.read_be_u64().unwrap();
-            let mut s = String::from_str("");
+        for _ in 0 .. sym_count {
+            let sz = read_be_u64(&mut f).unwrap();
+            let mut s = String::with_capacity(sz as usize);
 
-            for _ in range(0, sz) {
-                let b = f.read_u8().unwrap();
+            for _ in 0 .. sz {
+                let b = read_u8(&mut f).unwrap();
                 s.push(b as char);
             }
 
@@ -114,8 +134,8 @@ impl Library {
             mod_symt.push(h);
         }
 
-        let _ = f.seek(exports_off as i64, io::SeekSet);
-        let exports_count = f.read_be_u64().unwrap();
+        let _ = f.seek(io::SeekFrom::Start(exports_off));
+        let exports_count = read_be_u64(&mut f).unwrap();
 
         let env = gc.alloc(gc::Env {
             values: Vec::with_capacity(exports_count as usize),
@@ -123,12 +143,12 @@ impl Library {
         });
 
         debug!("Trying to access program text section at {:x}", text_off);
-        let _ = f.seek(text_off as i64, io::SeekSet);
-        let text_size = f.read_be_u64().unwrap();
+        let _ = f.seek(io::SeekFrom::Start(text_off));
+        let text_size = read_be_u64(&mut f).unwrap();
         let mut text = Vec::with_capacity(text_size as usize);
 
-        for _ in range(0, text_size) {
-            let b = f.read_u8().unwrap();
+        for _ in 0 .. text_size {
+            let b = read_u8(&mut f).unwrap();
             text.push(b);
         }
 
@@ -139,12 +159,12 @@ impl Library {
         })
     }
 
-    pub fn load(gc: &mut ::gc::GC, name: &LibName, lpath: Vec<Box<Path>>) -> Box<Library> {
+    pub fn load(gc: &mut ::gc::GC, name: &LibName, lpath: Vec<PathBuf>) -> Box<Library> {
         let mut lpath = lpath;
 
         for p in lpath.iter_mut() {
             for part in name.iter() {
-                p.push(&part[]);
+                p.push(&part);
             }
 
             if p.is_file() {

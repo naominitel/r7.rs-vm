@@ -2,7 +2,7 @@ use gc;
 
 // a garbage-collected Scheme environment
 
-type EnvItem = (bool, gc::value::Value);
+pub type EnvItem = (bool, gc::value::Value);
 
 pub struct Env {
     pub values: Vec<EnvItem>,
@@ -31,7 +31,7 @@ impl Env {
             } else if addr == len {
                 self.values.push((true, value.clone()));
             } else {
-                for _ in range(self.values.len() as u64, addr - 1) {
+                for _ in self.values.len() as u64 .. addr - 1 {
                     self.values.push((false, gc::value::Unit));
                 }
 
@@ -69,17 +69,17 @@ impl Env {
 
     #[allow(dead_code)]
     pub fn dump(&mut self) {
-        print!("[ ");
+        debug!("[ ");
 
         for &(b, ref i) in self.values.iter() {
             debug!("({}, {}) ", b, *i);
         }
 
-        print!("]");
+        debug!("]");
 
         match self.next {
             Some(mut e) => {
-                print!(" => ");
+                debug!(" => ");
                 e.dump();
             }
 

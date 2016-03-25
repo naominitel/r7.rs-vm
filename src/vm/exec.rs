@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use std::io::Reader;
-use std::num::FromPrimitive;
+use std::path::Path;
 
 use common::bytecode;
 use common::bytecode::base;
@@ -11,6 +10,7 @@ use gc;
 use gc::GC;
 use gc::Ptr;
 use gc::value;
+use gmp;
 use primitives;
 use vm::frame::Frame;
 use vm::library::Library;
@@ -197,7 +197,7 @@ impl VM {
 
     pub fn run(&mut self, prog: &str) {
         let p = Path::new(prog);
-        let name = vec!(String::from_str("main"));
+        let name = vec!(format!("main"));
         let l = Library::load_file(&mut *self.gc, &p, Box::new(LibName(name)));
         self.load_module(l);
     }
@@ -277,7 +277,7 @@ impl VM {
 
             let base = self.stack.len() - arity as usize;
 
-            for i in range(0, arity) {
+            for i in 0 .. arity {
                 let arg = self.stack[base + i as usize].clone();
                 env.values.push((true, arg));
             }
@@ -301,7 +301,7 @@ impl VM {
 
             let base = self.stack.len() - argc as usize;
 
-            for i in range(0, argc) {
+            for i in 0 .. argc {
                 let arg = self.stack[base + i as usize].clone();
                 env.values.push((true, arg));
             }
@@ -409,7 +409,7 @@ impl VM {
 
                     bytecode::Int => {
                         let i = self.read_be_i64();
-                        value::Num(FromPrimitive::from_i64(i).unwrap())
+                        value::Num(gmp::mpz::Mpz::from(i))
                     }
 
                     bytecode::Sym => {

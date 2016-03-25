@@ -10,10 +10,10 @@ pub fn symbol_to_string(argv: super::Arguments) -> gc::Value {
 
 pub fn string_to_symbol(argv: super::Arguments) -> gc::Value {
     let sym = match argv.vec() {
-        [gc::value::String(s)] => s.to_string(),
+        [gc::value::String(s)] => s.str.clone(),
         [_] => panic!("Argument is not a string"),
         _ => panic!("Wrong number of parameters")
     };
 
-    gc::value::Symbol(argv.vm.gc.intern(String::from_str(&sym[])))
+    gc::value::Symbol(argv.vm.gc.intern(sym))
 }

@@ -21,5 +21,6 @@ opt-level = 0
 debug = true
 rpath = false
 
-[dependencies.rust-gmp]
-git = "https://github.com/Naominitel/rust-gmp"
+[dependencies]
+rust-gmp = "*"
+log = "*"

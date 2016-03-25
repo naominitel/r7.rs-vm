@@ -3,7 +3,7 @@ use gc;
 
 // a garbage-collected Scheme pair
 
-#[packed]
+#[repr(packed)]
 #[derive(Clone)]
 pub struct Pair {
     pub car: gc::Value,
@@ -17,17 +17,17 @@ impl gc::visit::Visitor for Pair {
     }
 }
 
-impl fmt::String for Pair {
+impl fmt::Display for Pair {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let car = self.car.to_string();
 
         match self.cdr {
             gc::value::Pair(p) => fmt.pad(
-                &format!("{} {}", car, (*p).to_string())[]
+                &format!("{} {}", car, (*p).to_string())
             ),
 
-            gc::value::Null => fmt.pad(&format!("{}", car)[]),
-            ref v => fmt.pad(&format!("{} . {}", car, v.to_string())[])
+            gc::value::Null => fmt.pad(&format!("{}", car)),
+            ref v => fmt.pad(&format!("{} . {}", car, v.to_string()))
         }
     }
 }

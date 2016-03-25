@@ -1,13 +1,22 @@
+use std::cell::UnsafeCell;
 use std::fmt;
 use std::ops;
 use gc;
 
 // an abstraction for GC'd pointers
 
-#[derive(Clone)]
 pub struct Cell<T> {
-    pub data: T,
+    pub data: UnsafeCell<T>,
     pub mark: bool
+}
+
+impl<T: Clone> Clone for Cell<T> {
+    fn clone(&self) -> Cell<T> {
+        Cell {
+            data: UnsafeCell::new(unsafe { (*self.data.get()).clone() }),
+            mark: self.mark
+        }
+    }
 }
 
 pub struct Ptr<T>(pub *mut Cell<T>);
@@ -36,7 +45,7 @@ impl<T: gc::visit::Visitor> gc::visit::Visitor for Ptr<T> {
             let Cell { ref mut data, ref mut mark } = *ptr;
             if *mark != m {
                 *mark = m;
-                data.visit(m);
+                (*data.get()).visit(m);
             }
         }
     } 
@@ -62,14 +71,14 @@ impl<T> ops::DerefMut for Ptr<T> {
         let &mut Ptr(ptr) = self;
         unsafe {
             let Cell { ref data, .. } = *ptr;
-            ::std::mem::transmute(data)
+            ::std::mem::transmute(data.get())
         }
     }
 }
 
-impl<T: fmt::String> fmt::String for Ptr<T> {
+impl<T: fmt::Display> fmt::Display for Ptr<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let &Ptr(ptr) = self;
-        unsafe { (*ptr).data.fmt(fmt) }
+        unsafe { (*(*ptr).data.get()).fmt(fmt) }
     }
 }

@@ -124,7 +124,7 @@ impl GC {
         use gc::ptr::Cell;
 
         let mut cell = Box::new(Cell {
-            data: data,
+            data: ::std::cell::UnsafeCell::new(data),
             mark: self.current_mark
         });
 

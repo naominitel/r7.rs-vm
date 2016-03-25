@@ -26,7 +26,7 @@ pub mod list {
     pub fn is_list(value: &Value) -> bool {
         let mut ret = true;
 
-        for _ in iter(value, |&mut:_| {
+        for _ in iter(value, |_| {
             // non-pair value
             ret = false;
             None
@@ -38,7 +38,7 @@ pub mod list {
     // utility struct for efficiently building lists iteratively
 
     #[derive(Clone)]
-    struct ListBuilder {
+    pub struct ListBuilder {
         fst: gc::ptr::Cell<gc::Pair>,
         ptr: gc::Ptr<gc::Pair>,
     }
@@ -49,10 +49,10 @@ pub mod list {
         // allocate a dummy pair that will in fact point to the first
         // true element of the list to allow fast insertions
         fst: gc::ptr::Cell {
-            data: gc::Pair {
+            data: ::std::cell::UnsafeCell::new(gc::Pair {
                 car: Unit,
                 cdr: Null
-            },
+            }),
 
             mark: false
         },
@@ -85,7 +85,7 @@ pub mod list {
         #[inline(always)]
         pub fn get_list(&self) -> Value {
             // remove dummy node
-            self.fst.data.cdr.clone()
+            unsafe { (*self.fst.data.get()).cdr.clone() }
         }
     }
 
@@ -93,7 +93,7 @@ pub mod list {
     // iterates until it reaches a Null. If a non-pair or non-null value is
     // encountered, it raises the invalid_list condition
 
-    struct ListIterator<'a, F> where F: FnMut(Value) -> Option<Value> {
+    pub struct ListIterator<'a, F> where F: FnMut(Value) -> Option<Value> {
         cur: &'a Value,
         trap: F
     }
@@ -134,7 +134,7 @@ pub enum Value {
     Bool(bool),
     Closure(gc::Ptr<gc::Closure>),
     Null,
-    Num(gmp::Mpz),
+    Num(gmp::mpz::Mpz),
     Pair(gc::Ptr<gc::Pair>),
     Primitive(primitives::Prim, &'static str),
     String(gc::Ptr<gc::String>),
@@ -158,19 +158,19 @@ impl Clone for Value {
     }
 }
 
-impl fmt::String for Value {
+impl fmt::Display for Value {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &Bool(true) => fmt.pad("#t"),
-            &Bool(false) => fmt.pad("#f"),
-            &Closure(_) => fmt.pad("#<procedure>"),
-            &Null => fmt.pad("'()"),
-            &Num(ref i) => fmt.pad(&format!("{}", i.to_string())[]),
-            &Pair(p) => fmt.pad(&format!("({})", p.to_string())[]),
+            &Bool(true)      => fmt.pad("#t"),
+            &Bool(false)     => fmt.pad("#f"),
+            &Closure(_)      => fmt.pad("#<procedure>"),
+            &Null            => fmt.pad("'()"),
+            &Num(ref i)      => fmt.pad(&format!("{}", i)),
+            &Pair(p)         => fmt.pad(&format!("({})", p)),
             &Primitive(_, _) => fmt.pad("#<procedure>"),
-            &String(s) => fmt.pad(&format!("{}", s.to_string())[]),
-            &Symbol(h) => fmt.pad(&format!("'{}", h.to_string())[]),
-            &Unit => fmt.pad("")
+            &String(s)       => fmt.pad(&format!("{}", s)),
+            &Symbol(h)       => fmt.pad(&format!("'{}", h)),
+            &Unit            => fmt.pad("")
         }
     }
 }
@@ -221,14 +221,8 @@ impl Value {
 
             (&Num(ref i), &Num(ref j)) => i == j,
             (&Bool(b1), &Bool(b2)) => b1 == b2,
-            (&Symbol(h1), &Symbol(h2)) => (h1) == (h2),
-
-            (&String(s1), &String(s2)) => {
-                let s1 = s1.str.as_slice();
-                let s2 = s2.str.as_slice();
-                s1 == s2
-            }
-
+            (&Symbol(h1), &Symbol(h2)) => h1.str == h2.str,
+            (&String(s1), &String(s2)) => s1.str == s2.str,
             (&Null, &Null) => true,
             (&Unit, &Unit) => true,
             _ => false
